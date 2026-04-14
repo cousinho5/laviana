@@ -1,22 +1,12 @@
-import { useEffect } from 'react'
-import { supabase } from './lib/supabase'
+import Home from './pages/Home'
+import Lobby from './pages/Lobby'
+import { useGameStore } from './store/gameStore'
 
 function App() {
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.log('Error conectando con Supabase:', error)
-      } else {
-        console.log('Conexión con Supabase OK', data)
-      }
-    })
-  }, [])
+  const { room } = useGameStore()
 
-  return (
-    <div>
-      <h1>Laviana</h1>
-    </div>
-  )
+  if (room) return <Lobby />
+  return <Home />
 }
 
 export default App
