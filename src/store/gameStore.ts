@@ -8,6 +8,7 @@ type GameStore = {
   setRoom: (room: Room) => void
   setPlayers: (players: Player[]) => void
   setCurrentPlayer: (player: Player) => void
+  updatePlayer: (id: string, data: Partial<Player>) => void
 }
 
 export const useGameStore = create<GameStore>((set) => ({
@@ -17,4 +18,12 @@ export const useGameStore = create<GameStore>((set) => ({
   setRoom: (room) => set({ room }),
   setPlayers: (players) => set({ players }),
   setCurrentPlayer: (player) => set({ currentPlayer: player }),
+  updatePlayer: (id, data) =>
+    set((state) => ({
+      players: state.players.map((p) => (p.id === id ? { ...p, ...data } : p)),
+      currentPlayer:
+        state.currentPlayer?.id === id
+          ? { ...state.currentPlayer, ...data }
+          : state.currentPlayer,
+    })),
 }))
