@@ -68,6 +68,15 @@ export default function RoleReveal() {
     return () => { supabase.removeChannel(channel) }
   }, [room])
 
+  async function startNight() {
+    if (!room) return
+    const { error } = await supabase
+      .from('rooms')
+      .update({ phase: 'night' })
+      .eq('id', room.id)
+    console.log('startNight error:', error)
+  }
+
   const mayor = players.find(p => p.id === room?.mayor_id)
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const myRole = myPlayer?.role
@@ -122,6 +131,15 @@ export default function RoleReveal() {
               <p className="text-xs text-yellow-400 mb-1 uppercase tracking-widest">Alcalde</p>
               <p className="text-yellow-300 text-sm">Tu voto cuenta doble en las ejecuciones. Si mueres, el pueblo elige a tu sustituto.</p>
             </div>
+          )}
+
+          {currentPlayer?.is_host && (
+            <button
+              onClick={startNight}
+              className="w-full mt-2 bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+            >
+              Comenzar primera noche
+            </button>
           )}
         </div>
       )}
