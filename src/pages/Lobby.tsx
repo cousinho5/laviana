@@ -8,6 +8,8 @@ type Config = {
   has_seer: boolean
   has_protector: boolean
   has_hunter: boolean
+  public_votes: boolean
+  reveal_role: boolean
 }
 
 function getMaxWolves(playerCount: number): number {
@@ -39,12 +41,14 @@ export default function Lobby() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [showConfig, setShowConfig] = useState(false)
   const [config, setConfig] = useState<Config>({
-    wolves: 2,
-    has_alpha: false,
-    has_seer: false,
-    has_protector: false,
-    has_hunter: false,
-  })
+  wolves: 2,
+  has_alpha: false,
+  has_seer: false,
+  has_protector: false,
+  has_hunter: false,
+  public_votes: true,
+  reveal_role: true,
+})
 
   const isHost = currentPlayer?.is_host
   const playerCount = players.length
@@ -176,6 +180,8 @@ export default function Lobby() {
                   { key: 'has_seer', label: 'Vidente', desc: 'Ve el rol de un jugador cada noche' },
                   { key: 'has_protector', label: 'Protector', desc: 'Protege a un jugador cada noche' },
                   { key: 'has_hunter', label: 'Cazador', desc: 'Al morir elimina a otro jugador' },
+                  { key: 'public_votes', label: 'Votos públicos', desc: 'Todos ven a quién vota cada uno' },
+                  { key: 'reveal_role', label: 'Revelar rol al morir', desc: 'Se muestra el rol del ejecutado' },
                 ].map(({ key, label, desc }) => (
                   <div key={key} className="flex items-center justify-between">
                     <div>

@@ -3,15 +3,23 @@ export type Room = {
   code: string
   host_id: string
   status: 'lobby' | 'night' | 'day' | 'finished'
-  phase: 'lobby' | 'mayor_vote' | 'night' | 'day' | 'finished'
+  phase: 'lobby' | 'mayor_vote' | 'role_reveal' | 'night' | 'day' | 'execution' | 'finished'
+  day_phase: 'dawn' | 'debate' | 'vote' | 'execution'
   mayor_id: string | null
+  last_victim_id: string | null
+  last_victim_saved: boolean
+  last_executed_id: string | null
+  night: number
+  day: number
   config: {
-    wolves: number
-    has_alpha: boolean
-    has_seer: boolean
-    has_protector: boolean
-    has_hunter: boolean
-  }
+  wolves: number
+  has_alpha: boolean
+  has_seer: boolean
+  has_protector: boolean
+  has_hunter: boolean
+  public_votes: boolean
+  reveal_role: boolean
+}
   created_at: string
 }
 

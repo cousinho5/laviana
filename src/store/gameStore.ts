@@ -5,7 +5,7 @@ type GameStore = {
   room: Room | null
   players: Player[]
   currentPlayer: Player | null
-  setRoom: (room: Room) => void
+  setRoom: (room: Room | null) => void
   setPlayers: (players: Player[]) => void
   setCurrentPlayer: (player: Player) => void
   updatePlayer: (id: string, data: Partial<Player>) => void
