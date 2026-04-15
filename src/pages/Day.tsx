@@ -196,6 +196,19 @@ export default function Day() {
       .update({ is_alive: false })
       .eq('id', executedId)
 
+    const executedPlayerData = players.find(p => p.id === executedId)
+    if (executedPlayerData?.role === 'cazador') {
+      await supabase
+        .from('rooms')
+        .update({
+          phase: 'hunter',
+          hunter_id: executedId,
+          last_executed_id: executedId,
+        })
+        .eq('id', room.id)
+      return
+    }
+
     const updatedPlayers = await supabase
       .from('players')
       .select()

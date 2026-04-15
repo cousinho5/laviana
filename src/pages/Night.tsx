@@ -88,7 +88,6 @@ export default function Night() {
     const alivePlayers = players.filter(p => p.is_alive)
 
     const allActed = alivePlayers.every(p => {
-      const isWolfPlayer = p.role === 'lobo' || p.role === 'alpha' || p.infected
       const isSeerPlayer = p.role === 'vidente'
       const isProtectorPlayer = p.role === 'protector'
       const isInfectedWithRolePlayer = p.infected && (isSeerPlayer || isProtectorPlayer)
@@ -106,6 +105,15 @@ export default function Night() {
     })
 
     if (allActed) resolveNight(confirmedActions)
+  }
+
+  function checkVictory(currentPlayers: any[]) {
+    const alive = currentPlayers.filter(p => p.is_alive)
+    const wolves = alive.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
+    const villagers = alive.filter(p => !wolves.includes(p))
+    if (wolves.length === 0) return 'pueblo'
+    if (wolves.length >= villagers.length) return 'lobos'
+    return null
   }
 
   async function resolveNight(actions: any[]) {
@@ -163,15 +171,34 @@ export default function Night() {
       .select()
       .eq('room_id', room.id)
 
-    if (updatedPlayers.data) {
-      const winner = checkVictory(updatedPlayers.data)
-      if (winner) {
-        await supabase
-          .from('rooms')
-          .update({ phase: 'finished', winner })
-          .eq('id', room.id)
-        return
-      }
+    if (!updatedPlayers.data) return
+
+    const victimPlayer = victimId ? updatedPlayers.data.find(p => p.id === victimId) : null
+    const victimIsHunter = victimPlayer?.role === 'cazador' && !isProtected && !isInfectedVictim
+
+    if (victimIsHunter) {
+      await supabase
+        .from('rooms')
+        .update({
+          phase: 'hunter',
+          hunter_id: victimId,
+          day_phase: 'dawn',
+          night: room.night + 1,
+          last_victim_id: null,
+          last_victim_saved: false,
+          last_victim_infected: false,
+        })
+        .eq('id', room.id)
+      return
+    }
+
+    const winner = checkVictory(updatedPlayers.data)
+    if (winner) {
+      await supabase
+        .from('rooms')
+        .update({ phase: 'finished', winner })
+        .eq('id', room.id)
+      return
     }
 
     await supabase
@@ -185,16 +212,6 @@ export default function Night() {
         last_victim_infected: isInfectedVictim ? true : false,
       })
       .eq('id', room.id)
-  }
-
-  function checkVictory(currentPlayers: any[]) {
-    const alivePlayers = currentPlayers.filter(p => p.is_alive)
-    const aliveWolves = alivePlayers.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
-    const aliveVillagers = alivePlayers.filter(p => !aliveWolves.includes(p))
-
-    if (aliveWolves.length === 0) return 'pueblo'
-    if (aliveWolves.length >= aliveVillagers.length) return 'lobos'
-    return null
   }
 
   async function selectTarget(id: string) {
@@ -312,26 +329,17 @@ export default function Night() {
       {isSleeper && !hasActed && (
         <div className="w-full max-w-sm flex flex-col gap-3">
           {sleepStep === 0 && (
-            <button
-              onClick={() => setSleepStep(1)}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-4 font-medium transition-colors"
-            >
+            <button onClick={() => setSleepStep(1)} className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-4 font-medium transition-colors">
               Acostarse
             </button>
           )}
           {sleepStep === 1 && (
-            <button
-              onClick={() => setSleepStep(2)}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-4 font-medium transition-colors"
-            >
+            <button onClick={() => setSleepStep(2)} className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-4 font-medium transition-colors">
               Cerrar los ojos
             </button>
           )}
           {sleepStep === 2 && (
-            <button
-              onClick={confirmSleep}
-              className="w-full bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-4 font-medium transition-colors"
-            >
+            <button onClick={confirmSleep} className="w-full bg-gray-700 hover:bg-gray-600 rounded-lg px-4 py-4 font-medium transition-colors">
               Dormir
             </button>
           )}
