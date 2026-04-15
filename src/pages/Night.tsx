@@ -6,11 +6,13 @@ export default function Night() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [targetId, setTargetId] = useState<string | null>(null)
   const [hasActed, setHasActed] = useState(false)
-  const [waiting, setWaiting] = useState(false)
+  const [nightActions, setNightActions] = useState<any[]>([])
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null)
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const myRole = myPlayer?.role
   const alivePlayers = players.filter(p => p.is_alive && p.id !== currentPlayer?.id)
+  const aliveWolves = players.filter(p => p.is_alive && (p.role === 'lobo' || p.role === 'alpha'))
 
   const isWolf = myRole === 'lobo' || myRole === 'alpha'
   const isSeer = myRole === 'vidente'
@@ -26,6 +28,13 @@ export default function Night() {
       .eq('room_id', room.id)
       .then(({ data }) => { if (data) setPlayers(data) })
 
+    supabase
+      .from('night_actions')
+      .select()
+      .eq('room_id', room.id)
+      .eq('night', room.night)
+      .then(({ data }) => { if (data) setNightActions(data) })
+
     const channel = supabase
       .channel(`night-${room.id}`)
       .on('postgres_changes', {
@@ -38,97 +47,185 @@ export default function Night() {
         event: '*', schema: 'public', table: 'night_actions',
         filter: `room_id=eq.${room.id}`,
       }, () => {
-        checkAllActed()
+        supabase
+          .from('night_actions')
+          .select()
+          .eq('room_id', room.id)
+          .eq('night', room.night)
+          .then(({ data }) => {
+            if (data) {
+              setNightActions(data)
+              if (currentPlayer?.is_host) checkAllActed(data)
+            }
+          })
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [room])
 
-  async function checkAllActed() {
+  async function checkAllActed(actions: any[]) {
     if (!room) return
 
-    const { data: actions } = await supabase
-      .from('night_actions')
-      .select()
-      .eq('room_id', room.id)
-      .eq('night', room.night)
+    const confirmedActions = actions.filter(a => a.confirmed)
+    const alivePlayers = players.filter(p => p.is_alive)
+    const activeRoles = ['lobo', 'alpha', 'vidente', 'protector']
+    const activePlayers = alivePlayers.filter(p => activeRoles.includes(p.role ?? ''))
 
-    const { data: activePlayers } = await supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
-      .eq('is_alive', true)
-      .in('role', ['lobo', 'alpha', 'vidente', 'protector'])
+    const allActed = activePlayers.every(p =>
+      confirmedActions.find(a => a.player_id === p.id)
+    )
 
-    if (!actions || !activePlayers) return
-
-    const wolfAction = actions.find(a => a.action_type === 'kill')
-    const allActed = wolfAction !== undefined &&
-      activePlayers
-        .filter(p => p.role !== 'lobo' && p.role !== 'alpha' || p.role === 'alpha')
-        .every(p => actions.find(a => a.player_id === p.id))
-
-    if (allActed && currentPlayer?.is_host) {
-      resolveNight(actions)
-    }
+    if (allActed) resolveNight(confirmedActions)
   }
 
   async function resolveNight(actions: any[]) {
     if (!room) return
 
-    const killAction = actions.find(a => a.action_type === 'kill')
+    const killActions = actions.filter(a => a.action_type === 'kill')
     const protectAction = actions.find(a => a.action_type === 'protect')
 
-    if (!killAction) return
+    let victimId: string | null = null
 
-    const isProtected = protectAction?.target_id === killAction.target_id
+    if (killActions.length > 0) {
+      const voteCounts: Record<string, { count: number; firstAt: string; hasAlpha: boolean }> = {}
 
-    if (!isProtected) {
+      for (const action of killActions) {
+        if (!action.target_id) continue
+        const voter = players.find(p => p.id === action.player_id)
+        if (!voteCounts[action.target_id]) {
+          voteCounts[action.target_id] = {
+            count: 0,
+            firstAt: action.created_at,
+            hasAlpha: false,
+          }
+        }
+        voteCounts[action.target_id].count++
+        if (voter?.role === 'alpha') {
+          voteCounts[action.target_id].hasAlpha = true
+        }
+      }
+
+      const candidates = Object.entries(voteCounts)
+        .filter(([id]) => id !== 'null')
+        .sort((a, b) => {
+          if (b[1].count !== a[1].count) return b[1].count - a[1].count
+          if (b[1].hasAlpha !== a[1].hasAlpha) return b[1].hasAlpha ? 1 : -1
+          return new Date(a[1].firstAt).getTime() - new Date(b[1].firstAt).getTime()
+        })
+
+      if (candidates.length > 0) victimId = candidates[0][0]
+    }
+
+    const isProtected = victimId && protectAction?.target_id === victimId
+
+    if (victimId && !isProtected) {
       await supabase
         .from('players')
         .update({ is_alive: false })
-        .eq('id', killAction.target_id)
+        .eq('id', victimId)
     }
 
     await supabase
       .from('rooms')
-      .update({ phase: 'day', night: room.night + 1 })
+      .update({
+        phase: 'day',
+        night: room.night + 1,
+        last_victim_id: victimId && !isProtected ? victimId : null,
+        last_victim_saved: isProtected ? true : false,
+      })
       .eq('id', room.id)
   }
 
-  async function submitAction() {
-    if (!targetId || !currentPlayer || !room || hasActed) return
+  async function selectTarget(id: string) {
+    if (!currentPlayer || !room || hasActed) return
+    setTargetId(id)
 
-    let actionType = ''
-    if (isWolf) actionType = 'kill'
-    if (isSeer) actionType = 'reveal'
-    if (isProtector) actionType = 'protect'
+    if (!isWolf) return
 
-    await supabase
-      .from('night_actions')
-      .insert({
-        room_id: room.id,
-        player_id: currentPlayer.id,
-        action_type: actionType,
-        target_id: targetId,
-        night: room.night,
-      })
+    let actionType = 'kill'
 
-    setHasActed(true)
-    setWaiting(true)
-    checkAllActed()
+    if (pendingActionId) {
+      await supabase
+        .from('night_actions')
+        .update({ target_id: id })
+        .eq('id', pendingActionId)
+    } else {
+      const { data } = await supabase
+        .from('night_actions')
+        .insert({
+          room_id: room.id,
+          player_id: currentPlayer.id,
+          action_type: actionType,
+          target_id: id,
+          night: room.night,
+          confirmed: false,
+        })
+        .select()
+        .single()
+
+      if (data) setPendingActionId(data.id)
+    }
   }
 
+  async function confirmAction(passing: boolean = false) {
+    if (!currentPlayer || !room || hasActed) return
+
+    if (isWolf) {
+      if (pendingActionId) {
+        await supabase
+          .from('night_actions')
+          .update({ confirmed: true, target_id: passing ? null : targetId })
+          .eq('id', pendingActionId)
+      } else {
+        await supabase
+          .from('night_actions')
+          .insert({
+            room_id: room.id,
+            player_id: currentPlayer.id,
+            action_type: 'kill',
+            target_id: null,
+            night: room.night,
+            confirmed: true,
+          })
+      }
+    } else {
+      let actionType = ''
+      if (isSeer) actionType = 'reveal'
+      if (isProtector) actionType = 'protect'
+
+      await supabase
+        .from('night_actions')
+        .insert({
+          room_id: room.id,
+          player_id: currentPlayer.id,
+          action_type: actionType,
+          target_id: passing ? null : targetId,
+          night: room.night,
+          confirmed: true,
+        })
+    }
+
+    setHasActed(true)
+  }
+
+  const confirmedKills = nightActions.filter(a => a.action_type === 'kill' && a.confirmed)
+  const pendingKills = nightActions.filter(a => a.action_type === 'kill' && !a.confirmed)
+
+  const voteCountByTarget: Record<string, number> = {}
+  confirmedKills.forEach(a => {
+    if (a.target_id) voteCountByTarget[a.target_id] = (voteCountByTarget[a.target_id] || 0) + 1
+  })
+
   const actionLabel = () => {
-    if (isWolf) return 'Elegir víctima'
-    if (isSeer) return 'Investigar jugador'
-    if (isProtector) return 'Proteger jugador'
+    if (isWolf) return 'Confirmar voto'
+    if (isSeer) return 'Investigar'
+    if (isProtector) return 'Proteger'
     return ''
   }
 
   const targetLabel = () => {
-    if (isWolf) return 'Elige a quién devorar esta noche'
+    if (isWolf) return 'Selecciona a quién devorar — confirma cuando estés listo'
     if (isSeer) return 'Elige a quién investigar'
     if (isProtector) return 'Elige a quién proteger'
     return ''
@@ -138,7 +235,7 @@ export default function Night() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
-      <p className="text-gray-500 text-xs mb-1 uppercase tracking-widest">Noche {room.night}</p>
+      <p className="text-gray-500 text-xs mb-1 uppercase tracking-widest">Noche {room.night - 1 || 1}</p>
       <h2 className="text-2xl font-bold mb-8">El pueblo duerme</h2>
 
       {!hasNightAction && (
@@ -151,31 +248,89 @@ export default function Night() {
       {hasNightAction && !hasActed && (
         <div className="w-full max-w-sm flex flex-col gap-3">
           <p className="text-gray-400 text-sm mb-2">{targetLabel()}</p>
-          {alivePlayers.map(player => (
-            <button
-              key={player.id}
-              onClick={() => setTargetId(player.id)}
-              className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
-                ${targetId === player.id ? 'bg-purple-800 border border-purple-500' : 'bg-gray-800 hover:bg-gray-700'}
-              `}
-            >
-              <span>{player.name}</span>
-            </button>
-          ))}
+
+          {alivePlayers.map(player => {
+            const confirmedVotes = voteCountByTarget[player.id] || 0
+            const pendingVoter = pendingKills.find(a => a.target_id === player.id)
+            const pendingVoterName = pendingVoter
+              ? players.find(p => p.id === pendingVoter.player_id)?.name
+              : null
+            const isMyPending = pendingKills.find(a => a.player_id === currentPlayer.id)?.target_id === player.id
+
+            return (
+              <button
+                key={player.id}
+                onClick={() => selectTarget(player.id)}
+                className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
+                  ${targetId === player.id ? 'bg-purple-800 border border-purple-500' : 'bg-gray-800 hover:bg-gray-700'}
+                `}
+              >
+                <span>{player.name}</span>
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {isWolf && confirmedVotes > 0 && (
+                    <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full">
+                      {confirmedVotes} confirmado{confirmedVotes > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {isWolf && pendingVoterName && !isMyPending && (
+                    <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full">
+                      {pendingVoterName} quiere votar
+                    </span>
+                  )}
+                  {isMyPending && (
+                    <span className="text-xs text-gray-500">tu selección</span>
+                  )}
+                </div>
+              </button>
+            )
+          })}
 
           <button
-            onClick={submitAction}
-            disabled={!targetId}
+            onClick={() => confirmAction(false)}
+            disabled={!targetId && !isWolf}
             className={`w-full mt-2 rounded-lg px-4 py-3 font-medium transition-colors
               ${targetId ? 'bg-purple-700 hover:bg-purple-600' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
             `}
           >
             {actionLabel()}
           </button>
+
+          <button
+            onClick={() => confirmAction(true)}
+            className="w-full rounded-lg px-4 py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Pasar turno
+          </button>
         </div>
       )}
 
-      {waiting && (
+      {isWolf && !hasActed && aliveWolves.length > 1 && (
+        <div className="w-full max-w-sm mt-4 bg-gray-900 rounded-xl p-4">
+          <p className="text-xs text-red-400 mb-2 uppercase tracking-widest">Estado de los lobos</p>
+          {nightActions.filter(a => a.action_type === 'kill').length === 0 && (
+            <p className="text-gray-600 text-sm">Ningún lobo ha seleccionado aún</p>
+          )}
+          {nightActions.filter(a => a.action_type === 'kill').map(action => {
+            const voter = players.find(p => p.id === action.player_id)
+            const target = players.find(p => p.id === action.target_id)
+            return (
+              <p key={action.id} className="text-sm mb-1">
+                <span className="text-red-300">{voter?.name}</span>
+                <span className="text-gray-500"> → </span>
+                <span className="text-white">{target ? target.name : 'sin selección'}</span>
+                <span className="text-xs ml-2">
+                  {action.confirmed
+                    ? <span className="text-green-400">confirmado</span>
+                    : <span className="text-yellow-400">pensando...</span>
+                  }
+                </span>
+              </p>
+            )
+          })}
+        </div>
+      )}
+
+      {hasActed && (
         <p className="text-gray-500 text-sm mt-4">Acción registrada. Esperando al amanecer...</p>
       )}
     </div>
