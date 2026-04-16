@@ -25,7 +25,6 @@ export default function Night() {
   const isProtector = myRole === 'protector'
   const isInfectedWithRole = isInfected && (isSeer || isProtector)
   const isSleeper = !isWolf && !isSeer && !isProtector
-  const hasNightAction = isWolf || isSeer || isProtector
 
   useEffect(() => {
     if (!room) return
@@ -44,12 +43,12 @@ export default function Night() {
       .then(({ data }) => { if (data) setNightActions(data) })
 
     supabase
-      .from('night_actions')
+      .from('players')
       .select()
-      .eq('room_id', room.id)
-      .eq('action_type', 'infect')
+      .eq('id', currentPlayer?.id)
+      .single()
       .then(({ data }) => {
-        if (data && data.length > 0) setAlphaUsedInfection(true)
+        if (data?.used_infection) setAlphaUsedInfection(true)
       })
 
     const channel = supabase
@@ -257,11 +256,19 @@ export default function Night() {
         .insert({
           room_id: room.id,
           player_id: currentPlayer.id,
-          action_type: 'kill',
+          action_type: infectMode ? 'infect' : 'kill',
           target_id: null,
           night: room.night,
           confirmed: true,
         })
+    }
+
+    if (infectMode) {
+      await supabase
+        .from('players')
+        .update({ used_infection: true })
+        .eq('id', currentPlayer.id)
+      setAlphaUsedInfection(true)
     }
 
     if (isInfectedWithRole) {
@@ -280,16 +287,25 @@ export default function Night() {
     if (isSeer) actionType = 'reveal'
     if (isProtector) actionType = 'protect'
 
+    const finalTarget = passing ? null : (roleTargetId ?? targetId)
+
     await supabase
       .from('night_actions')
       .insert({
         room_id: room.id,
         player_id: currentPlayer.id,
         action_type: actionType,
-        target_id: passing ? null : (roleTargetId ?? targetId),
+        target_id: finalTarget,
         night: room.night,
         confirmed: true,
       })
+
+    if (isProtector && finalTarget) {
+      await supabase
+        .from('players')
+        .update({ last_protected: finalTarget })
+        .eq('id', currentPlayer.id)
+    }
 
     setHasActed(true)
   }
@@ -458,17 +474,24 @@ export default function Night() {
             {isSeer ? 'Ahora investiga a alguien' : 'Ahora elige a quién proteger'}
           </p>
 
-          {alivePlayers.map(player => (
-            <button
-              key={player.id}
-              onClick={() => setTargetId(player.id)}
-              className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
-                ${targetId === player.id ? 'bg-purple-800 border border-purple-500' : 'bg-gray-800 hover:bg-gray-700'}
-              `}
-            >
-              <span>{player.name}</span>
-            </button>
-          ))}
+          {alivePlayers.map(player => {
+            const isLastProtected = isProtector && myPlayer?.last_protected === player.id
+            return (
+              <button
+                key={player.id}
+                onClick={() => !isLastProtected && setTargetId(player.id)}
+                disabled={isLastProtected}
+                className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
+                  ${isLastProtected ? 'bg-gray-900 text-gray-600 cursor-not-allowed' : ''}
+                  ${!isLastProtected && targetId === player.id ? 'bg-purple-800 border border-purple-500' : ''}
+                  ${!isLastProtected && targetId !== player.id ? 'bg-gray-800 hover:bg-gray-700' : ''}
+                `}
+              >
+                <span>{player.name}</span>
+                {isLastProtected && <span className="text-xs text-gray-600">protegido anoche</span>}
+              </button>
+            )
+          })}
 
           <button
             onClick={() => confirmRoleAction(false)}
@@ -495,17 +518,24 @@ export default function Night() {
             {isSeer ? 'Elige a quién investigar' : 'Elige a quién proteger'}
           </p>
 
-          {alivePlayers.map(player => (
-            <button
-              key={player.id}
-              onClick={() => setTargetId(player.id)}
-              className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
-                ${targetId === player.id ? 'bg-purple-800 border border-purple-500' : 'bg-gray-800 hover:bg-gray-700'}
-              `}
-            >
-              <span>{player.name}</span>
-            </button>
-          ))}
+          {alivePlayers.map(player => {
+            const isLastProtected = isProtector && myPlayer?.last_protected === player.id
+            return (
+              <button
+                key={player.id}
+                onClick={() => !isLastProtected && setTargetId(player.id)}
+                disabled={isLastProtected}
+                className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
+                  ${isLastProtected ? 'bg-gray-900 text-gray-600 cursor-not-allowed' : ''}
+                  ${!isLastProtected && targetId === player.id ? 'bg-purple-800 border border-purple-500' : ''}
+                  ${!isLastProtected && targetId !== player.id ? 'bg-gray-800 hover:bg-gray-700' : ''}
+                `}
+              >
+                <span>{player.name}</span>
+                {isLastProtected && <span className="text-xs text-gray-600">protegido anoche</span>}
+              </button>
+            )
+          })}
 
           <button
             onClick={() => confirmRoleAction(false)}

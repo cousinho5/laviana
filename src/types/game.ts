@@ -36,5 +36,7 @@ export type Player = {
   role: string | null
   voted_for: string | null
   infected: boolean
+  last_protected: string | null
+  used_infection: boolean
   created_at: string
 }

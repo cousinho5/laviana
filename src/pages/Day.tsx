@@ -90,11 +90,12 @@ export default function Day() {
   }, [room])
 
   function checkAllVoted(votes: any[]) {
-    const confirmedVotes = votes.filter(v => v.confirmed)
-    if (confirmedVotes.length === alivePlayers.length) {
-      resolveVote(confirmedVotes)
-    }
+  const confirmedVotes = votes.filter(v => v.confirmed)
+  const currentAlivePlayers = players.filter(p => p.is_alive)
+  if (confirmedVotes.length >= currentAlivePlayers.length && currentAlivePlayers.length > 0) {
+    resolveVote(confirmedVotes)
   }
+}
 
   function checkVictory(currentPlayers: any[]) {
     const alive = currentPlayers.filter(p => p.is_alive)
