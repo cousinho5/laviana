@@ -90,12 +90,12 @@ export default function Day() {
   }, [room])
 
   function checkAllVoted(votes: any[]) {
-  const confirmedVotes = votes.filter(v => v.confirmed)
-  const currentAlivePlayers = players.filter(p => p.is_alive)
-  if (confirmedVotes.length >= currentAlivePlayers.length && currentAlivePlayers.length > 0) {
-    resolveVote(confirmedVotes)
+    const confirmedVotes = votes.filter(v => v.confirmed)
+    const currentAlivePlayers = players.filter(p => p.is_alive)
+    if (confirmedVotes.length >= currentAlivePlayers.length && currentAlivePlayers.length > 0) {
+      resolveVote(confirmedVotes)
+    }
   }
-}
 
   function checkVictory(currentPlayers: any[]) {
     const alive = currentPlayers.filter(p => p.is_alive)
@@ -111,10 +111,7 @@ export default function Day() {
     setSelectedId(id)
 
     if (pendingVoteId) {
-      await supabase
-        .from('day_votes')
-        .update({ target_id: id })
-        .eq('id', pendingVoteId)
+      await supabase.from('day_votes').update({ target_id: id }).eq('id', pendingVoteId)
     } else {
       const { data } = await supabase
         .from('day_votes')
@@ -142,16 +139,14 @@ export default function Day() {
         .update({ confirmed: true, abstain, target_id: abstain ? null : selectedId })
         .eq('id', pendingVoteId)
     } else {
-      await supabase
-        .from('day_votes')
-        .insert({
-          room_id: room.id,
-          player_id: currentPlayer.id,
-          target_id: abstain ? null : selectedId,
-          confirmed: true,
-          abstain,
-          day: currentDay,
-        })
+      await supabase.from('day_votes').insert({
+        room_id: room.id,
+        player_id: currentPlayer.id,
+        target_id: abstain ? null : selectedId,
+        confirmed: true,
+        abstain,
+        day: currentDay,
+      })
     }
 
     setHasVoted(true)
@@ -174,10 +169,7 @@ export default function Day() {
     const noExecution = abstentions > maxVotes || Object.keys(voteCounts).length === 0
 
     if (noExecution) {
-      await supabase
-        .from('rooms')
-        .update({ last_executed_id: null, day_phase: 'execution' })
-        .eq('id', room.id)
+      await supabase.from('rooms').update({ last_executed_id: null, day_phase: 'execution' }).eq('id', room.id)
       return
     }
 
@@ -192,44 +184,39 @@ export default function Day() {
       if (mayorTie) executedId = mayorTie[0]
     }
 
-    await supabase
-      .from('players')
-      .update({ is_alive: false })
-      .eq('id', executedId)
+    await supabase.from('players').update({ is_alive: false }).eq('id', executedId)
 
-    const executedPlayerData = players.find(p => p.id === executedId)
-    if (executedPlayerData?.role === 'cazador') {
-      await supabase
-        .from('rooms')
-        .update({
-          phase: 'hunter',
-          hunter_id: executedId,
-          last_executed_id: executedId,
-        })
-        .eq('id', room.id)
+    if (executedId === room.mayor_id) {
+      await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+      await supabase.from('rooms').update({
+        phase: 'mayor_replace',
+        mayor_vote_reason: 'day',
+        last_executed_id: executedId,
+      }).eq('id', room.id)
       return
     }
 
-    const updatedPlayers = await supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
+    const executedPlayerData = players.find(p => p.id === executedId)
+    if (executedPlayerData?.role === 'cazador') {
+      await supabase.from('rooms').update({
+        phase: 'hunter',
+        hunter_id: executedId,
+        last_executed_id: executedId,
+      }).eq('id', room.id)
+      return
+    }
+
+    const updatedPlayers = await supabase.from('players').select().eq('room_id', room.id)
 
     if (updatedPlayers.data) {
       const winner = checkVictory(updatedPlayers.data)
       if (winner) {
-        await supabase
-          .from('rooms')
-          .update({ phase: 'finished', winner, last_executed_id: executedId })
-          .eq('id', room.id)
+        await supabase.from('rooms').update({ phase: 'finished', winner, last_executed_id: executedId }).eq('id', room.id)
         return
       }
     }
 
-    await supabase
-      .from('rooms')
-      .update({ last_executed_id: executedId, day_phase: 'execution' })
-      .eq('id', room.id)
+    await supabase.from('rooms').update({ last_executed_id: executedId, day_phase: 'execution' }).eq('id', room.id)
   }
 
   const confirmedVotes = dayVotes.filter(v => v.confirmed)
@@ -303,20 +290,26 @@ export default function Day() {
           </div>
 
           {currentPlayer.is_host ? (
-            <button
-              onClick={async () => {
-                await supabase
-                  .from('rooms')
-                  .update({ day_phase: 'debate' })
-                  .eq('id', room.id)
-              }}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-            >
-              Comenzar debate
-            </button>
-          ) : (
-            <p className="text-gray-600 text-sm text-center">Esperando al host...</p>
-          )}
+  <button
+    onClick={async () => {
+      const mayorIsDead = !alivePlayers.find(p => p.id === room.mayor_id)
+      if (mayorIsDead) {
+        await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+        await supabase.from('rooms').update({
+          phase: 'mayor_replace',
+          mayor_vote_reason: 'dawn',
+        }).eq('id', room.id)
+      } else {
+        await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
+      }
+    }}
+    className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+  >
+    {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
+  </button>
+) : (
+  <p className="text-gray-600 text-sm text-center">Esperando al host...</p>
+)}
         </div>
       )}
 
@@ -345,15 +338,8 @@ export default function Day() {
           {currentPlayer.is_host ? (
             <button
               onClick={async () => {
-                await supabase
-                  .from('day_votes')
-                  .delete()
-                  .eq('room_id', room.id)
-                  .eq('day', currentDay)
-                await supabase
-                  .from('rooms')
-                  .update({ day_phase: 'vote' })
-                  .eq('id', room.id)
+                await supabase.from('day_votes').delete().eq('room_id', room.id).eq('day', currentDay)
+                await supabase.from('rooms').update({ day_phase: 'vote' }).eq('id', room.id)
                 setHasVoted(false)
                 setSelectedId(null)
                 setPendingVoteId(null)
@@ -436,9 +422,7 @@ export default function Day() {
                 onClick={() => confirmVote(false)}
                 disabled={!selectedId}
                 className={`w-full rounded-lg px-4 py-3 font-medium transition-colors
-                  ${selectedId
-                    ? 'bg-purple-700 hover:bg-purple-600'
-                    : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
+                  ${selectedId ? 'bg-purple-700 hover:bg-purple-600' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
                 `}
               >
                 Confirmar voto
@@ -483,10 +467,7 @@ export default function Day() {
           {currentPlayer.is_host ? (
             <button
               onClick={async () => {
-                await supabase
-                  .from('rooms')
-                  .update({ phase: 'night', day_phase: 'dawn' })
-                  .eq('id', room.id)
+                await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn' }).eq('id', room.id)
               }}
               className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
             >

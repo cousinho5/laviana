@@ -41,15 +41,9 @@ export default function Hunter() {
   async function shoot(targetId: string) {
     if (!room) return
 
-    await supabase
-      .from('players')
-      .update({ is_alive: false })
-      .eq('id', targetId)
+    await supabase.from('players').update({ is_alive: false }).eq('id', targetId)
 
-    const updatedPlayers = await supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
+    const updatedPlayers = await supabase.from('players').select().eq('room_id', room.id)
 
     if (updatedPlayers.data) {
       const alive = updatedPlayers.data.filter(p => p.is_alive)
@@ -61,24 +55,17 @@ export default function Hunter() {
       else if (wolves.length >= villagers.length) winner = 'lobos'
 
       if (winner) {
-        await supabase
-          .from('rooms')
-          .update({ phase: 'finished', winner, hunter_target_id: targetId })
-          .eq('id', room.id)
+        await supabase.from('rooms').update({ phase: 'finished', winner, hunter_target_id: targetId }).eq('id', room.id)
         return
       }
     }
 
     const comingFromNight = room.day_phase === 'dawn'
-
-    await supabase
-      .from('rooms')
-      .update({
-        hunter_target_id: targetId,
-        phase: comingFromNight ? 'day' : 'day',
-        day_phase: comingFromNight ? 'dawn' : 'execution',
-      })
-      .eq('id', room.id)
+    await supabase.from('rooms').update({
+      hunter_target_id: targetId,
+      phase: 'day',
+      day_phase: comingFromNight ? 'dawn' : 'execution',
+    }).eq('id', room.id)
   }
 
   async function skipShot() {
@@ -86,14 +73,11 @@ export default function Hunter() {
 
     const comingFromNight = room.day_phase === 'dawn'
 
-    await supabase
-      .from('rooms')
-      .update({
-        hunter_target_id: null,
-        phase: 'day',
-        day_phase: comingFromNight ? 'dawn' : 'execution',
-      })
-      .eq('id', room.id)
+    await supabase.from('rooms').update({
+      hunter_target_id: null,
+      phase: 'day',
+      day_phase: comingFromNight ? 'dawn' : 'execution',
+    }).eq('id', room.id)
   }
 
   if (!room || !currentPlayer) return null

@@ -3,7 +3,8 @@ export type Room = {
   code: string
   host_id: string
   status: 'lobby' | 'night' | 'day' | 'finished'
-  phase: 'lobby' | 'mayor_vote' | 'role_reveal' | 'night' | 'day' | 'hunter' | 'finished'
+  phase: 'lobby' | 'mayor_vote' | 'role_reveal' | 'night' | 'day' | 'hunter' | 'mayor_replace' | 'finished'
+  mayor_vote_reason: string | null
   day_phase: 'dawn' | 'debate' | 'vote' | 'execution'
   mayor_id: string | null
   last_victim_id: string | null

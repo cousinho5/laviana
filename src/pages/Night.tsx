@@ -153,64 +153,60 @@ export default function Night() {
 
     if (victimId && !isProtected) {
       if (isInfectedVictim) {
-        await supabase
-          .from('players')
-          .update({ infected: true })
-          .eq('id', victimId)
+        await supabase.from('players').update({ infected: true }).eq('id', victimId)
       } else {
-        await supabase
-          .from('players')
-          .update({ is_alive: false })
-          .eq('id', victimId)
+        await supabase.from('players').update({ is_alive: false }).eq('id', victimId)
       }
     }
 
-    const updatedPlayers = await supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
-
+    const updatedPlayers = await supabase.from('players').select().eq('room_id', room.id)
     if (!updatedPlayers.data) return
 
     const victimPlayer = victimId ? updatedPlayers.data.find(p => p.id === victimId) : null
     const victimIsHunter = victimPlayer?.role === 'cazador' && !isProtected && !isInfectedVictim
+    const mayorDied = victimId && !isProtected && !isInfectedVictim && victimId === room.mayor_id
 
     if (victimIsHunter) {
-      await supabase
-        .from('rooms')
-        .update({
-          phase: 'hunter',
-          hunter_id: victimId,
-          day_phase: 'dawn',
-          night: room.night + 1,
-          last_victim_id: null,
-          last_victim_saved: false,
-          last_victim_infected: false,
-        })
-        .eq('id', room.id)
+      await supabase.from('rooms').update({
+        phase: 'hunter',
+        hunter_id: victimId,
+        day_phase: 'dawn',
+        night: room.night + 1,
+        last_victim_id: null,
+        last_victim_saved: false,
+        last_victim_infected: false,
+      }).eq('id', room.id)
+      return
+    }
+
+    if (mayorDied) {
+      await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+      await supabase.from('rooms').update({
+        phase: 'mayor_replace',
+        mayor_vote_reason: 'night',
+        day_phase: 'dawn',
+        night: room.night + 1,
+        last_victim_id: victimId,
+        last_victim_saved: false,
+        last_victim_infected: false,
+      }).eq('id', room.id)
       return
     }
 
     const winner = checkVictory(updatedPlayers.data)
     if (winner) {
-      await supabase
-        .from('rooms')
-        .update({ phase: 'finished', winner })
-        .eq('id', room.id)
+      await supabase.from('rooms').update({ phase: 'finished', winner }).eq('id', room.id)
       return
     }
 
-    await supabase
-      .from('rooms')
-      .update({
-        phase: 'day',
-        day_phase: 'dawn',
-        night: room.night + 1,
-        last_victim_id: victimId && !isProtected && !isInfectedVictim ? victimId : null,
-        last_victim_saved: isProtected ? true : false,
-        last_victim_infected: isInfectedVictim ? true : false,
-      })
-      .eq('id', room.id)
+    await supabase.from('rooms').update({
+      phase: 'day',
+      day_phase: 'dawn',
+      night: room.night + 1,
+      last_victim_id: victimId && !isProtected && !isInfectedVictim ? victimId : null,
+      last_victim_saved: isProtected ? true : false,
+      last_victim_infected: isInfectedVictim ? true : false,
+    }).eq('id', room.id)
   }
 
   async function selectTarget(id: string) {
@@ -220,10 +216,7 @@ export default function Night() {
     const actionType = infectMode ? 'infect' : 'kill'
 
     if (pendingActionId) {
-      await supabase
-        .from('night_actions')
-        .update({ target_id: id, action_type: actionType })
-        .eq('id', pendingActionId)
+      await supabase.from('night_actions').update({ target_id: id, action_type: actionType }).eq('id', pendingActionId)
     } else {
       const { data } = await supabase
         .from('night_actions')
@@ -246,28 +239,20 @@ export default function Night() {
     if (!currentPlayer || !room) return
 
     if (pendingActionId) {
-      await supabase
-        .from('night_actions')
-        .update({ confirmed: true, target_id: passing ? null : targetId })
-        .eq('id', pendingActionId)
+      await supabase.from('night_actions').update({ confirmed: true, target_id: passing ? null : targetId }).eq('id', pendingActionId)
     } else {
-      await supabase
-        .from('night_actions')
-        .insert({
-          room_id: room.id,
-          player_id: currentPlayer.id,
-          action_type: infectMode ? 'infect' : 'kill',
-          target_id: null,
-          night: room.night,
-          confirmed: true,
-        })
+      await supabase.from('night_actions').insert({
+        room_id: room.id,
+        player_id: currentPlayer.id,
+        action_type: infectMode ? 'infect' : 'kill',
+        target_id: null,
+        night: room.night,
+        confirmed: true,
+      })
     }
 
     if (infectMode) {
-      await supabase
-        .from('players')
-        .update({ used_infection: true })
-        .eq('id', currentPlayer.id)
+      await supabase.from('players').update({ used_infection: true }).eq('id', currentPlayer.id)
       setAlphaUsedInfection(true)
     }
 
@@ -289,22 +274,17 @@ export default function Night() {
 
     const finalTarget = passing ? null : (roleTargetId ?? targetId)
 
-    await supabase
-      .from('night_actions')
-      .insert({
-        room_id: room.id,
-        player_id: currentPlayer.id,
-        action_type: actionType,
-        target_id: finalTarget,
-        night: room.night,
-        confirmed: true,
-      })
+    await supabase.from('night_actions').insert({
+      room_id: room.id,
+      player_id: currentPlayer.id,
+      action_type: actionType,
+      target_id: finalTarget,
+      night: room.night,
+      confirmed: true,
+    })
 
     if (isProtector && finalTarget) {
-      await supabase
-        .from('players')
-        .update({ last_protected: finalTarget })
-        .eq('id', currentPlayer.id)
+      await supabase.from('players').update({ last_protected: finalTarget }).eq('id', currentPlayer.id)
     }
 
     setHasActed(true)
@@ -313,16 +293,14 @@ export default function Night() {
   async function confirmSleep() {
     if (!currentPlayer || !room) return
 
-    await supabase
-      .from('night_actions')
-      .insert({
-        room_id: room.id,
-        player_id: currentPlayer.id,
-        action_type: 'sleep',
-        target_id: null,
-        night: room.night,
-        confirmed: true,
-      })
+    await supabase.from('night_actions').insert({
+      room_id: room.id,
+      player_id: currentPlayer.id,
+      action_type: 'sleep',
+      target_id: null,
+      night: room.night,
+      confirmed: true,
+    })
 
     setHasActed(true)
   }

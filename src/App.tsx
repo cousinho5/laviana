@@ -2,6 +2,7 @@ import { useGameStore } from './store/gameStore'
 import Home from './pages/Home'
 import Lobby from './pages/Lobby'
 import MayorVote from './pages/MayorVote'
+import MayorReplace from './pages/MayorReplace'
 import RoleReveal from './pages/RoleReveal'
 import Night from './pages/Night'
 import Day from './pages/Day'
@@ -15,6 +16,7 @@ function App() {
   if (!room) return <Home />
   if (room.phase === 'finished') return <Finished />
   if (room.phase === 'hunter') return <Hunter />
+  if (room.phase === 'mayor_replace') return <MayorReplace />
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   if (myPlayer && !myPlayer.is_alive && room.phase !== 'hunter') return <Dead />
