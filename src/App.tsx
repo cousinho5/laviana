@@ -20,13 +20,14 @@ function App() {
   const isDead = myPlayer && !myPlayer.is_alive
 
   if (room.phase === 'hunter') return <Hunter />
+
   if (room.phase === 'mayor_replace') {
-  const deadMayorId = room.mayor_vote_reason === 'day'
-    ? room.last_executed_id
-    : room.last_victim_id
-  const iAmAlreadyDead = myPlayer && !myPlayer.is_alive && currentPlayer?.id !== deadMayorId
-  return iAmAlreadyDead ? <Dead /> : <MayorReplace />
-}
+    const deadMayorId = room.mayor_vote_reason === 'day'
+      ? room.last_executed_id
+      : room.last_victim_id
+    const iAmAlreadyDead = myPlayer && !myPlayer.is_alive && currentPlayer?.id !== deadMayorId
+    return iAmAlreadyDead ? <Dead /> : <MayorReplace />
+  }
 
   if (isDead) return <Dead />
 
@@ -34,14 +35,9 @@ function App() {
   if (room.phase === 'mayor_vote') return <MayorVote />
   if (room.phase === 'role_reveal') return <RoleReveal />
   if (room.phase === 'night') return <Night />
-  if (room.phase === 'mayor_replace') {
-  const deadMayorId = room.mayor_vote_reason === 'day'
-    ? room.last_executed_id
-    : room.last_victim_id
-  const iAmAlreadyDead = myPlayer && !myPlayer.is_alive && currentPlayer?.id !== deadMayorId
-  return iAmAlreadyDead ? <Dead /> : <MayorReplace />
-}
-if (room.phase === 'day') return <Day />
+  if (room.phase === 'day') return <Day />
+
   return <Lobby />
 }
+
 export default App

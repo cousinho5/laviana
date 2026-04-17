@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 
 const roleLabels: Record<string, string> = {

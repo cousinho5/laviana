@@ -5,7 +5,7 @@ export type Room = {
   status: 'lobby' | 'night' | 'day' | 'finished'
   phase: 'lobby' | 'mayor_vote' | 'role_reveal' | 'night' | 'day' | 'hunter' | 'mayor_replace' | 'finished'
   mayor_vote_reason: string | null
-  day_phase: 'dawn' | 'debate' | 'vote' | 'execution'
+  day_phase: 'dawn' | 'debate' | 'vote' | 'execution' | 'new_mayor'
   mayor_id: string | null
   last_victim_id: string | null
   last_victim_saved: boolean
