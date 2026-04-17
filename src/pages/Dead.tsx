@@ -48,19 +48,6 @@ export default function Dead() {
             if (data) checkAllActed(data)
           })
       })
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'day_votes',
-        filter: `room_id=eq.${room.id}`,
-      }, () => {
-        if (!isHost || !room) return
-        supabase
-          .from('day_votes')
-          .select()
-          .eq('room_id', room.id)
-          .then(({ data }) => {
-            if (data) checkAllDayVoted(data)
-          })
-      })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
@@ -173,73 +160,6 @@ export default function Dead() {
     }).eq('id', room.id)
   }
 
-  async function checkAllDayVoted(votes: any[]) {
-    if (!room) return
-
-    const confirmedVotes = votes.filter(v => v.confirmed)
-    const currentAlivePlayers = players.filter(p => p.is_alive)
-
-    if (confirmedVotes.length < currentAlivePlayers.length) return
-
-    const realVotes = confirmedVotes.filter(v => !v.abstain && v.target_id)
-    const abstentions = confirmedVotes.filter(v => v.abstain).length
-    const mayorVote = confirmedVotes.find(v => v.player_id === room.mayor_id && !v.abstain)
-
-    const voteCounts: Record<string, number> = {}
-    for (const vote of realVotes) {
-      const weight = vote.player_id === room.mayor_id ? 2 : 1
-      voteCounts[vote.target_id] = (voteCounts[vote.target_id] || 0) + weight
-    }
-
-    const maxVotes = Math.max(...Object.values(voteCounts), 0)
-    const noExecution = abstentions > maxVotes || Object.keys(voteCounts).length === 0
-
-    if (noExecution) {
-      await supabase.from('rooms').update({ last_executed_id: null, day_phase: 'execution' }).eq('id', room.id)
-      return
-    }
-
-    const sorted = Object.entries(voteCounts).sort((a, b) => b[1] - a[1])
-    const topVotes = sorted[0][1]
-    const tied = sorted.filter(([, v]) => v === topVotes)
-
-    let executedId = tied[0][0]
-
-    if (tied.length > 1 && mayorVote) {
-      const mayorTie = tied.find(([id]) => id === mayorVote.target_id)
-      if (mayorTie) executedId = mayorTie[0]
-    }
-
-    await supabase.from('players').update({ is_alive: false }).eq('id', executedId)
-
-    const executedPlayerData = players.find(p => p.id === executedId)
-    if (executedPlayerData?.role === 'cazador') {
-      await supabase.from('rooms').update({
-        phase: 'hunter',
-        hunter_id: executedId,
-        last_executed_id: executedId,
-      }).eq('id', room.id)
-      return
-    }
-
-    const updatedPlayers = await supabase.from('players').select().eq('room_id', room.id)
-    if (!updatedPlayers.data) return
-
-    const alive = updatedPlayers.data.filter(p => p.is_alive)
-    const wolves = alive.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
-    const villagers = alive.filter(p => !wolves.includes(p))
-    let winner = null
-    if (wolves.length === 0) winner = 'pueblo'
-    else if (wolves.length >= villagers.length) winner = 'lobos'
-
-    if (winner) {
-      await supabase.from('rooms').update({ phase: 'finished', winner, last_executed_id: executedId }).eq('id', room.id)
-      return
-    }
-
-    await supabase.from('rooms').update({ last_executed_id: executedId, day_phase: 'execution' }).eq('id', room.id)
-  }
-
   async function advance(update: object) {
     if (!room) return
     await supabase.from('rooms').update(update).eq('id', room.id)
@@ -292,12 +212,20 @@ export default function Dead() {
 
           {isDay && dayPhase === 'execution' && (
             <button
-              onClick={() => advance({ phase: 'night', day_phase: 'dawn' })}
+              onClick={() => advance({ phase: 'night', day_phase: 'dawn', hunter_target_id: null })}
               className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
             >
               Comenzar siguiente noche
             </button>
           )}
+          {isDay && dayPhase === 'new_mayor' && (
+  <button
+    onClick={() => advance({ phase: 'night', day_phase: 'dawn', hunter_target_id: null })}
+    className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+  >
+    Comenzar siguiente noche
+  </button>
+)}
         </div>
       )}
     </div>

@@ -6,11 +6,18 @@ export default function MayorReplace() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
+  const [localVotes, setLocalVotes] = useState<Record<string, string>>({}) // playerId -> targetId
 
   const alivePlayers = players.filter(p => p.is_alive)
+  const myPlayer = players.find(p => p.id === currentPlayer?.id)
 
   useEffect(() => {
     if (!room) return
+
+    // Limpiar votos locales al entrar
+    setLocalVotes({})
+    setHasVoted(false)
+    setSelectedId(null)
 
     supabase
       .from('players')
@@ -23,7 +30,11 @@ export default function MayorReplace() {
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'players',
         filter: `room_id=eq.${room.id}`,
-      }, () => {
+      }, ({ new: updated }) => {
+        // Si el jugador actualizado tiene voted_for, registrarlo en localVotes
+        if (updated.voted_for) {
+          setLocalVotes(prev => ({ ...prev, [updated.id]: updated.voted_for }))
+        }
         supabase.from('players').select().eq('room_id', room.id)
           .then(({ data }) => { if (data) setPlayers(data) })
       })
@@ -36,61 +47,49 @@ export default function MayorReplace() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [room])
+  }, [])  // 👈 sin dependencias, solo se ejecuta al montar
 
-  const votesPerPlayer = alivePlayers.reduce((acc, p) => {
-    if (p.voted_for) {
-      acc[p.voted_for] = (acc[p.voted_for] || 0) + 1
-    }
+  const votesPerTarget = Object.values(localVotes).reduce((acc, targetId) => {
+    acc[targetId] = (acc[targetId] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
-  const totalVotes = alivePlayers.filter(p => p.voted_for).length
+  const totalVotes = Object.keys(localVotes).length
   const allVoted = totalVotes === alivePlayers.length && alivePlayers.length > 0
 
   useEffect(() => {
     if (!allVoted || !currentPlayer?.is_host || !room) return
+    if (totalVotes === 0) return
 
-    const currentAlive = players.filter(p => p.is_alive)
-    if (currentAlive.length === 0) return
+    const sorted = Object.entries(votesPerTarget).sort((a, b) => b[1] - a[1])
+if (sorted.length === 0) return
 
-    const sorted = [...currentAlive].sort((a, b) => {
-      const votesA = votesPerPlayer[a.id] || 0
-      const votesB = votesPerPlayer[b.id] || 0
-      return votesB - votesA
-    })
-
-    const winner = sorted[0]
-    const reason = room.mayor_vote_reason
-
-    const nextDayPhase = reason === 'day' ? 'execution' : reason === 'dawn' ? 'debate' : 'dawn'
+const topVotes = sorted[0][1]
+const tied = sorted.filter(([, v]) => v === topVotes)
+const winnerId = tied[Math.floor(Math.random() * tied.length)][0]
 
     supabase
       .from('rooms')
       .update({
-        mayor_id: winner.id,
+        mayor_id: winnerId,
         phase: 'day',
-        day_phase: nextDayPhase,
+        day_phase: 'new_mayor',
       })
       .eq('id', room.id)
       .then(async () => {
-        for (const player of currentAlive) {
-          await supabase
-            .from('players')
-            .update({ voted_for: null })
-            .eq('id', player.id)
-        }
+        await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
       })
-  }, [allVoted])
+  }, [allVoted, totalVotes])
 
   async function vote() {
-    if (!selectedId || !currentPlayer || hasVoted) return
+    if (!selectedId || !currentPlayer || hasVoted || !myPlayer?.is_alive) return
 
     await supabase
       .from('players')
       .update({ voted_for: selectedId })
       .eq('id', currentPlayer.id)
 
+    setLocalVotes(prev => ({ ...prev, [currentPlayer.id]: selectedId }))
     setHasVoted(true)
   }
 
@@ -106,9 +105,10 @@ export default function MayorReplace() {
 
       <div className="w-full max-w-sm flex flex-col gap-2 mb-6">
         {alivePlayers.map(player => {
-          const voteCount = votesPerPlayer[player.id] || 0
+          const voteCount = votesPerTarget[player.id] || 0
           const isSelected = selectedId === player.id
           const isMe = player.id === currentPlayer.id
+          const hasVotedPlayer = Object.keys(localVotes).includes(player.id)
 
           return (
             <button
@@ -128,7 +128,7 @@ export default function MayorReplace() {
                     {voteCount} voto{voteCount > 1 ? 's' : ''}
                   </span>
                 )}
-                {player.voted_for && (
+                {hasVotedPlayer && (
                   <span className="text-xs text-gray-500">votó</span>
                 )}
               </div>

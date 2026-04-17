@@ -167,14 +167,16 @@ export default function Night() {
     const mayorDied = victimId && !isProtected && !isInfectedVictim && victimId === room.mayor_id
 
     if (victimIsHunter) {
+      const hunterIsMayor = victimId === room.mayor_id
       await supabase.from('rooms').update({
-        phase: 'hunter',
-        hunter_id: victimId,
-        day_phase: 'dawn',
+       phase: 'hunter',
+       hunter_id: victimId,
+       day_phase: 'dawn',
         night: room.night + 1,
-        last_victim_id: null,
-        last_victim_saved: false,
+        last_victim_id: victimId,
+       last_victim_saved: false,
         last_victim_infected: false,
+        mayor_vote_reason: hunterIsMayor ? 'night' : null,
       }).eq('id', room.id)
       return
     }
@@ -200,13 +202,14 @@ export default function Night() {
     }
 
     await supabase.from('rooms').update({
-      phase: 'day',
-      day_phase: 'dawn',
-      night: room.night + 1,
-      last_victim_id: victimId && !isProtected && !isInfectedVictim ? victimId : null,
-      last_victim_saved: isProtected ? true : false,
-      last_victim_infected: isInfectedVictim ? true : false,
-    }).eq('id', room.id)
+  phase: 'day',
+  day_phase: 'dawn',
+  night: room.night + 1,
+  last_victim_id: victimId && !isProtected && !isInfectedVictim ? victimId : null,
+  last_victim_saved: isProtected ? true : false,
+  last_victim_infected: isInfectedVictim ? true : false,
+  hunter_target_id: null,
+}).eq('id', room.id)
   }
 
   async function selectTarget(id: string) {

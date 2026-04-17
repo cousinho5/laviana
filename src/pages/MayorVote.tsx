@@ -52,12 +52,14 @@ export default function MayorVote() {
 
     console.log('Calculando alcalde...')
     const sorted = [...players].sort((a, b) => {
-      const votesA = votesPerPlayer[a.id] || 0
-      const votesB = votesPerPlayer[b.id] || 0
-      return votesB - votesA
-    })
+  const votesA = votesPerPlayer[a.id] || 0
+  const votesB = votesPerPlayer[b.id] || 0
+  return votesB - votesA
+})
 
-    const winner = sorted[0]
+const topVotes = votesPerPlayer[sorted[0].id] || 0
+const tied = sorted.filter(p => (votesPerPlayer[p.id] || 0) === topVotes)
+const winner = tied[Math.floor(Math.random() * tied.length)]
     console.log('Ganador:', winner.name)
 
     supabase

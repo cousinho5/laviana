@@ -78,33 +78,13 @@ export default function Day() {
           .eq('room_id', room.id)
           .eq('day', currentDay)
           .then(({ data }) => {
-            if (data) {
-              setDayVotes(data)
-              if (currentPlayer?.is_host) checkAllVoted(data)
-            }
+            if (data) setDayVotes(data)
           })
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [room])
-
-  function checkAllVoted(votes: any[]) {
-    const confirmedVotes = votes.filter(v => v.confirmed)
-    const currentAlivePlayers = players.filter(p => p.is_alive)
-    if (confirmedVotes.length >= currentAlivePlayers.length && currentAlivePlayers.length > 0) {
-      resolveVote(confirmedVotes)
-    }
-  }
-
-  function checkVictory(currentPlayers: any[]) {
-    const alive = currentPlayers.filter(p => p.is_alive)
-    const wolves = alive.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
-    const villagers = alive.filter(p => !wolves.includes(p))
-    if (wolves.length === 0) return 'pueblo'
-    if (wolves.length >= villagers.length) return 'lobos'
-    return null
-  }
 
   async function selectTarget(id: string) {
     if (!currentPlayer || !room || hasVoted || !isAlive) return
@@ -152,73 +132,6 @@ export default function Day() {
     setHasVoted(true)
   }
 
-  async function resolveVote(votes: any[]) {
-    if (!room) return
-
-    const realVotes = votes.filter(v => !v.abstain && v.target_id)
-    const abstentions = votes.filter(v => v.abstain).length
-    const mayorVote = votes.find(v => v.player_id === room.mayor_id && !v.abstain)
-
-    const voteCounts: Record<string, number> = {}
-    for (const vote of realVotes) {
-      const weight = vote.player_id === room.mayor_id ? 2 : 1
-      voteCounts[vote.target_id] = (voteCounts[vote.target_id] || 0) + weight
-    }
-
-    const maxVotes = Math.max(...Object.values(voteCounts), 0)
-    const noExecution = abstentions > maxVotes || Object.keys(voteCounts).length === 0
-
-    if (noExecution) {
-      await supabase.from('rooms').update({ last_executed_id: null, day_phase: 'execution' }).eq('id', room.id)
-      return
-    }
-
-    const sorted = Object.entries(voteCounts).sort((a, b) => b[1] - a[1])
-    const topVotes = sorted[0][1]
-    const tied = sorted.filter(([, v]) => v === topVotes)
-
-    let executedId = tied[0][0]
-
-    if (tied.length > 1 && mayorVote) {
-      const mayorTie = tied.find(([id]) => id === mayorVote.target_id)
-      if (mayorTie) executedId = mayorTie[0]
-    }
-
-    await supabase.from('players').update({ is_alive: false }).eq('id', executedId)
-
-    if (executedId === room.mayor_id) {
-      await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
-      await supabase.from('rooms').update({
-        phase: 'mayor_replace',
-        mayor_vote_reason: 'day',
-        last_executed_id: executedId,
-      }).eq('id', room.id)
-      return
-    }
-
-    const executedPlayerData = players.find(p => p.id === executedId)
-    if (executedPlayerData?.role === 'cazador') {
-      await supabase.from('rooms').update({
-        phase: 'hunter',
-        hunter_id: executedId,
-        last_executed_id: executedId,
-      }).eq('id', room.id)
-      return
-    }
-
-    const updatedPlayers = await supabase.from('players').select().eq('room_id', room.id)
-
-    if (updatedPlayers.data) {
-      const winner = checkVictory(updatedPlayers.data)
-      if (winner) {
-        await supabase.from('rooms').update({ phase: 'finished', winner, last_executed_id: executedId }).eq('id', room.id)
-        return
-      }
-    }
-
-    await supabase.from('rooms').update({ last_executed_id: executedId, day_phase: 'execution' }).eq('id', room.id)
-  }
-
   const confirmedVotes = dayVotes.filter(v => v.confirmed)
   const pendingVotes = dayVotes.filter(v => !v.confirmed)
 
@@ -232,6 +145,36 @@ export default function Day() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
+
+      {dayPhase === 'new_mayor' && (
+        <div className="w-full max-w-sm flex flex-col gap-4 text-center">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">
+            Nuevo Alcalde
+          </p>
+          <div className="bg-yellow-950 border border-yellow-900 rounded-xl p-6">
+            <p className="text-gray-400 text-sm mb-2">El pueblo ha elegido como nuevo Alcalde a</p>
+            <p className="text-yellow-400 text-2xl font-bold">
+              {players.find(p => p.id === room.mayor_id)?.name}
+            </p>
+          </div>
+          {currentPlayer.is_host ? (
+            <button
+              onClick={async () => {
+                await supabase.from('rooms').update({
+                  phase: 'night',
+                  day_phase: 'dawn',
+                  hunter_target_id: null,
+                }).eq('id', room.id)
+              }}
+              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+            >
+              Comenzar siguiente noche
+            </button>
+          ) : (
+            <p className="text-gray-600 text-sm">Esperando al host...</p>
+          )}
+        </div>
+      )}
 
       {dayPhase === 'dawn' && (
         <div className="w-full max-w-sm flex flex-col gap-4">
@@ -265,6 +208,15 @@ export default function Day() {
             </div>
           )}
 
+          {room.hunter_target_id && (
+            <div className="bg-gray-900 rounded-xl p-4 text-center">
+              <p className="text-gray-400 text-sm mb-1">Antes de morir, el cazador disparó a</p>
+              <p className="text-orange-400 text-lg font-bold">
+                {players.find(p => p.id === room.hunter_target_id)?.name}
+              </p>
+            </div>
+          )}
+
           {seerResult && (
             <div className="bg-purple-950 border border-purple-900 rounded-xl p-4">
               <p className="text-xs text-purple-400 mb-2 uppercase tracking-widest">Tu investigación</p>
@@ -290,26 +242,26 @@ export default function Day() {
           </div>
 
           {currentPlayer.is_host ? (
-  <button
-    onClick={async () => {
-      const mayorIsDead = !alivePlayers.find(p => p.id === room.mayor_id)
-      if (mayorIsDead) {
-        await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
-        await supabase.from('rooms').update({
-          phase: 'mayor_replace',
-          mayor_vote_reason: 'dawn',
-        }).eq('id', room.id)
-      } else {
-        await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
-      }
-    }}
-    className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-  >
-    {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
-  </button>
-) : (
-  <p className="text-gray-600 text-sm text-center">Esperando al host...</p>
-)}
+            <button
+              onClick={async () => {
+                const mayorIsDead = !alivePlayers.find(p => p.id === room.mayor_id)
+                if (mayorIsDead) {
+                  await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+                  await supabase.from('rooms').update({
+                    phase: 'mayor_replace',
+                    mayor_vote_reason: 'dawn',
+                  }).eq('id', room.id)
+                } else {
+                  await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
+                }
+              }}
+              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+            >
+              {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
+            </button>
+          ) : (
+            <p className="text-gray-600 text-sm text-center">Esperando al host...</p>
+          )}
         </div>
       )}
 
@@ -467,17 +419,31 @@ export default function Day() {
           {currentPlayer.is_host ? (
             <button
               onClick={async () => {
-                await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn' }).eq('id', room.id)
+                const mayorWasExecuted = room.last_executed_id === room.mayor_id
+                if (mayorWasExecuted) {
+                  await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+                  await supabase.from('rooms').update({
+                    phase: 'mayor_replace',
+                    mayor_vote_reason: 'day',
+                  }).eq('id', room.id)
+                } else {
+                  await supabase.from('rooms').update({
+                    phase: 'night',
+                    day_phase: 'dawn',
+                    hunter_target_id: null,
+                  }).eq('id', room.id)
+                }
               }}
               className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
             >
-              Comenzar siguiente noche
+              {room.last_executed_id === room.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
             </button>
           ) : (
             <p className="text-gray-600 text-sm">Esperando al host...</p>
           )}
         </div>
       )}
+
     </div>
   )
 }
