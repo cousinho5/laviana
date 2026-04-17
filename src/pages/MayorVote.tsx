@@ -6,115 +6,123 @@ export default function MayorVote() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
+  const [localVotes, setLocalVotes] = useState<Record<string, string>>({})
+
+  const roomRef = { current: room }
+  const playersRef = { current: players }
+  const currentPlayerRef = { current: currentPlayer }
 
   useEffect(() => {
     if (!room) return
+    setLocalVotes({})
+    setHasVoted(false)
+    setSelectedId(null)
 
-    supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
+    const roomId = room.id
+    const totalPlayers = players.length
+    const isHost = currentPlayer?.is_host
+
+    supabase.from('players').select().eq('room_id', roomId)
       .then(({ data }) => { if (data) setPlayers(data) })
 
     const channel = supabase
-      .channel(`mayor-${room.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'players',
-        filter: `room_id=eq.${room.id}`,
-      }, () => {
-        supabase.from('players').select().eq('room_id', room.id)
+      .channel(`mayor-vote-${roomId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, ({ new: updated }) => {
+        if (updated.voted_for) {
+          setLocalVotes(prev => {
+            const newVotes = { ...prev, [updated.id]: updated.voted_for }
+
+            if (isHost && Object.keys(newVotes).length === totalPlayers) {
+              const votesPerTarget = Object.values(newVotes).reduce((acc, targetId) => {
+                acc[targetId] = (acc[targetId] || 0) + 1
+                return acc
+              }, {} as Record<string, number>)
+
+              const sorted = Object.entries(votesPerTarget).sort((a, b) => b[1] - a[1])
+              const topVotes = sorted[0][1]
+              const tied = sorted.filter(([, v]) => v === topVotes)
+              const winnerId = tied[Math.floor(Math.random() * tied.length)][0]
+
+              supabase.from('rooms').update({ mayor_id: winnerId, phase: 'role_reveal' }).eq('id', roomId)
+            }
+
+            return newVotes
+          })
+        }
+        supabase.from('players').select().eq('room_id', roomId)
           .then(({ data }) => { if (data) setPlayers(data) })
       })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'rooms',
-        filter: `id=eq.${room.id}`,
-      }, ({ new: updated }) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, ({ new: updated }) => {
         setRoom(updated as any)
       })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
-  }, [room])
+  }, [])
 
-  const votesPerPlayer = players.reduce((acc, p) => {
-    if (p.voted_for) {
-      acc[p.voted_for] = (acc[p.voted_for] || 0) + 1
-    }
+  const votesPerTarget = Object.values(localVotes).reduce((acc, targetId) => {
+    acc[targetId] = (acc[targetId] || 0) + 1
     return acc
   }, {} as Record<string, number>)
 
-  const totalVotes = players.filter(p => p.voted_for).length
-  const allVoted = totalVotes === players.length
-
-  useEffect(() => {
-    console.log('allVoted:', allVoted, 'isHost:', currentPlayer?.is_host, 'players:', players.length)
-    if (!allVoted || !currentPlayer?.is_host || !room) return
-
-    console.log('Calculando alcalde...')
-    const sorted = [...players].sort((a, b) => {
-  const votesA = votesPerPlayer[a.id] || 0
-  const votesB = votesPerPlayer[b.id] || 0
-  return votesB - votesA
-})
-
-const topVotes = votesPerPlayer[sorted[0].id] || 0
-const tied = sorted.filter(p => (votesPerPlayer[p.id] || 0) === topVotes)
-const winner = tied[Math.floor(Math.random() * tied.length)]
-    console.log('Ganador:', winner.name)
-
-    supabase
-      .from('rooms')
-      .update({ mayor_id: winner.id, phase: 'role_reveal' })
-      .eq('id', room.id)
-      .then(({ error }) => console.log('Update result:', error))
-  }, [allVoted])
+  const totalVotes = Object.keys(localVotes).length
+  const allVoted = totalVotes === players.length && players.length > 0
 
   async function vote() {
     if (!selectedId || !currentPlayer || hasVoted) return
-
-    await supabase
-      .from('players')
-      .update({ voted_for: selectedId })
-      .eq('id', currentPlayer.id)
-
+    await supabase.from('players').update({ voted_for: selectedId }).eq('id', currentPlayer.id)
     setHasVoted(true)
   }
 
   if (!room) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
-      <h2 className="text-2xl font-bold mb-2">Elección del Alcalde</h2>
-      <p className="text-gray-400 text-sm mb-8 text-center">
-        Vota quién debe liderar el pueblo. Nadie conoce aún su rol.
+    <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+
+      <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }}>
+        ELECCIÓN DEL ALCALDE
+      </p>
+      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8b89a', marginBottom: '8px' }}>
+        ¿Quién liderará el pueblo?
+      </h2>
+      <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', marginBottom: '32px', textAlign: 'center' }}>
+        Nadie conoce aún su rol. Vota con instinto.
       </p>
 
-      <div className="w-full max-w-sm flex flex-col gap-2 mb-6">
+      <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
         {players.map((player) => {
-          const voteCount = votesPerPlayer[player.id] || 0
+          const voteCount = votesPerTarget[player.id] || 0
           const isSelected = selectedId === player.id
           const isMe = player.id === currentPlayer?.id
+          const hasVotedPlayer = Object.keys(localVotes).includes(player.id)
 
           return (
             <button
               key={player.id}
               onClick={() => !hasVoted && !isMe && setSelectedId(player.id)}
               disabled={hasVoted || isMe}
-              className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
-                ${isMe ? 'bg-gray-900 text-gray-600 cursor-not-allowed' : ''}
-                ${!isMe && isSelected ? 'bg-purple-800 border border-purple-500' : ''}
-                ${!isMe && !isSelected ? 'bg-gray-800 hover:bg-gray-700' : ''}
-              `}
+              style={{
+                background: isSelected ? 'rgba(42,34,24,0.95)' : 'rgba(13,16,21,0.9)',
+                border: isSelected ? '1px solid #8a6840' : '1px solid #2a2520',
+                borderRadius: '4px',
+                padding: '12px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: isMe || hasVoted ? 'not-allowed' : 'pointer',
+                opacity: isMe ? 0.4 : 1,
+              }}
             >
-              <span>{player.name} {isMe && '(tú)'}</span>
-              <div className="flex items-center gap-3">
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a' }}>
+                {player.name} {isMe && '(tú)'}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {voteCount > 0 && (
-                  <span className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded-full">
+                  <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a6840', border: '1px solid #5a4830', borderRadius: '3px', padding: '2px 8px' }}>
                     {voteCount} voto{voteCount > 1 ? 's' : ''}
                   </span>
                 )}
-                {player.voted_for && (
-                  <span className="text-xs text-gray-500">votó</span>
+                {hasVotedPlayer && (
+                  <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30' }}>votó</span>
                 )}
               </div>
             </button>
@@ -126,22 +134,33 @@ const winner = tied[Math.floor(Math.random() * tied.length)]
         <button
           onClick={vote}
           disabled={!selectedId}
-          className={`w-full max-w-sm rounded-lg px-4 py-3 font-medium transition-colors
-            ${selectedId ? 'bg-purple-700 hover:bg-purple-600' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
-          `}
+          style={{
+            width: '100%',
+            maxWidth: '340px',
+            background: selectedId ? 'rgba(42,34,24,0.9)' : 'rgba(13,16,21,0.5)',
+            border: `1px solid ${selectedId ? '#5a4830' : '#1a1815'}`,
+            borderRadius: '4px',
+            padding: '13px 16px',
+            color: selectedId ? '#c8b89a' : '#3a3530',
+            fontFamily: 'Georgia, serif',
+            fontSize: '14px',
+            cursor: selectedId ? 'pointer' : 'not-allowed',
+          }}
         >
           Confirmar voto
         </button>
       )}
 
       {hasVoted && !allVoted && (
-        <p className="text-gray-500 text-sm">
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', letterSpacing: '1px' }}>
           Esperando votos... ({totalVotes}/{players.length})
         </p>
       )}
 
       {allVoted && (
-        <p className="text-green-400 text-sm">Todos han votado. Calculando resultado...</p>
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8a9a70', letterSpacing: '1px' }}>
+          Todos han votado. Calculando resultado...
+        </p>
       )}
     </div>
   )

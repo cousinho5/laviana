@@ -37,18 +37,31 @@ function canStart(playerCount: number, config: Config): boolean {
   return true
 }
 
+const s = {
+  page: { minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', padding: '24px' },
+  label: { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px', textAlign: 'center' as const },
+  code: { fontFamily: 'Georgia, serif', fontSize: '48px', fontWeight: '700', color: '#c8b89a', letterSpacing: '12px', marginBottom: '4px' },
+  subtitle: { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30', letterSpacing: '1px', marginBottom: '32px', textAlign: 'center' as const },
+  section: { width: '100%', maxWidth: '340px' },
+  sectionLabel: { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '12px' },
+  playerCard: { background: 'rgba(13,16,21,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' },
+  playerName: { fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a' },
+  badge: (color: string) => ({ fontFamily: 'Georgia, serif', fontSize: '10px', color, border: `1px solid ${color}`, borderRadius: '3px', padding: '2px 8px', marginLeft: '6px', opacity: 0.8 }),
+  divider: { height: '1px', background: '#1a1815', margin: '16px 0' },
+  configBox: { background: 'rgba(13,16,21,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '16px', marginBottom: '12px', display: 'flex', flexDirection: 'column' as const, gap: '16px' },
+  configLabel: { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8b89a' },
+  configDesc: { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30', marginTop: '2px' },
+  btnSecondary: { background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '12px 16px', color: '#7a6a55', fontFamily: 'Georgia, serif', fontSize: '13px', cursor: 'pointer', width: '100%', marginBottom: '8px' },
+  btnPrimary: (active: boolean) => ({ background: active ? 'rgba(42,34,24,0.9)' : 'rgba(13,16,21,0.5)', border: `1px solid ${active ? '#5a4830' : '#1a1815'}`, borderRadius: '4px', padding: '13px 16px', color: active ? '#c8b89a' : '#3a3530', fontFamily: 'Georgia, serif', fontSize: '14px', cursor: active ? 'pointer' : 'not-allowed', width: '100%' }),
+  waiting: { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', textAlign: 'center' as const, letterSpacing: '1px' },
+}
+
 export default function Lobby() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [showConfig, setShowConfig] = useState(false)
   const [config, setConfig] = useState<Config>({
-  wolves: 2,
-  has_alpha: false,
-  has_seer: false,
-  has_protector: false,
-  has_hunter: false,
-  public_votes: true,
-  reveal_role: true,
-})
+    wolves: 2, has_alpha: false, has_seer: false, has_protector: false, has_hunter: false, public_votes: true, reveal_role: true,
+  })
 
   const isHost = currentPlayer?.is_host
   const playerCount = players.length
@@ -58,44 +71,28 @@ export default function Lobby() {
 
   useEffect(() => {
     if (!room) return
-
-    supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
+    supabase.from('players').select().eq('room_id', room.id)
       .then(({ data }) => { if (data) setPlayers(data) })
-
     const channel = supabase
       .channel(`room-${room.id}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'players',
-        filter: `room_id=eq.${room.id}`,
-      }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${room.id}` }, () => {
         supabase.from('players').select().eq('room_id', room.id)
           .then(({ data }) => { if (data) setPlayers(data) })
       })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'rooms',
-        filter: `id=eq.${room.id}`,
-      }, ({ new: updated }) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${room.id}` }, ({ new: updated }) => {
         setRoom(updated as any)
       })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [room])
 
   async function saveConfig(newConfig: Config) {
     setConfig(newConfig)
-    await supabase
-      .from('rooms')
-      .update({ config: newConfig })
-      .eq('id', room!.id)
+    await supabase.from('rooms').update({ config: newConfig }).eq('id', room!.id)
   }
 
   async function startGame() {
     if (!startable || !room) return
-
     const roles: string[] = []
     for (let i = 0; i < config.wolves; i++) roles.push('lobo')
     if (config.has_alpha) roles.push('alpha')
@@ -103,74 +100,59 @@ export default function Lobby() {
     if (config.has_protector) roles.push('protector')
     if (config.has_hunter) roles.push('cazador')
     while (roles.length < playerCount) roles.push('laviano')
-
     const shuffled = roles.sort(() => Math.random() - 0.5)
-
     for (let i = 0; i < players.length; i++) {
-      await supabase
-        .from('players')
-        .update({ role: shuffled[i] })
-        .eq('id', players[i].id)
+      await supabase.from('players').update({ role: shuffled[i] }).eq('id', players[i].id)
     }
-
-    await supabase
-      .from('rooms')
-      .update({ phase: 'mayor_vote' })
-      .eq('id', room.id)
+    await supabase.from('rooms').update({ phase: 'mayor_vote' }).eq('id', room.id)
   }
 
   if (!room) return null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
-      <p className="text-gray-500 text-sm mb-1">Código de sala</p>
-      <h2 className="text-5xl font-bold tracking-widest mb-2">{room.code}</h2>
-      <p className="text-gray-500 text-sm mb-8">Comparte este código con los jugadores</p>
+    <div style={s.page}>
+      <p style={s.label}>CÓDIGO DE SALA</p>
+      <h2 style={s.code}>{room.code}</h2>
+      <p style={s.subtitle}>Comparte este código con los jugadores</p>
 
-      <div className="w-full max-w-sm">
-        <p className="text-gray-400 text-sm mb-3">Jugadores ({playerCount})</p>
-        <div className="flex flex-col gap-2 mb-6">
-          {players.map((player) => (
-            <div key={player.id} className="bg-gray-800 rounded-lg px-4 py-3 flex items-center justify-between">
-              <span>{player.name}</span>
-              <div className="flex gap-2">
-                {player.is_host && (
-                  <span className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded-full">host</span>
-                )}
-                {player.id === currentPlayer?.id && (
-                  <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full">tú</span>
-                )}
-              </div>
+      <div style={s.section}>
+        <p style={s.sectionLabel}>JUGADORES ({playerCount})</p>
+
+        {players.map((player) => (
+          <div key={player.id} style={s.playerCard}>
+            <span style={s.playerName}>{player.name}</span>
+            <div style={{ display: 'flex' }}>
+              {player.is_host && <span style={s.badge('#8a7a65')}>host</span>}
+              {player.id === currentPlayer?.id && <span style={s.badge('#5a5045')}>tú</span>}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
 
         {isHost && (
           <>
-            <button
-              onClick={() => setShowConfig(!showConfig)}
-              className="w-full mb-3 bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-            >
+            <div style={s.divider} />
+
+            <button style={s.btnSecondary} onClick={() => setShowConfig(!showConfig)}>
               {showConfig ? 'Ocultar configuración' : 'Configurar partida'}
             </button>
 
             {showConfig && (
-              <div className="bg-gray-900 rounded-xl p-4 mb-4 flex flex-col gap-4">
+              <div style={s.configBox}>
 
-                <div className="flex items-center justify-between">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <p className="text-sm font-medium">Lobos normales</p>
-                    <p className="text-xs text-gray-500">Máximo {maxWolves} para {playerCount} jugadores</p>
+                    <p style={s.configLabel}>Lobos normales</p>
+                    <p style={s.configDesc}>Máximo {maxWolves} para {playerCount} jugadores</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
                       onClick={() => saveConfig({ ...config, wolves: Math.max(1, config.wolves - 1) })}
-                      className="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-lg text-lg font-medium"
+                      style={{ width: '32px', height: '32px', background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', color: '#c8b89a', fontFamily: 'Georgia, serif', fontSize: '18px', cursor: 'pointer' }}
                     >-</button>
-                    <span className="w-4 text-center">{config.wolves}</span>
+                    <span style={{ ...s.configLabel, minWidth: '16px', textAlign: 'center' }}>{config.wolves}</span>
                     <button
                       onClick={() => saveConfig({ ...config, wolves: Math.min(maxWolves, config.wolves + 1) })}
-                      className="w-8 h-8 bg-gray-700 hover:bg-gray-600 rounded-lg text-lg font-medium"
+                      style={{ width: '32px', height: '32px', background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', color: '#c8b89a', fontFamily: 'Georgia, serif', fontSize: '18px', cursor: 'pointer' }}
                     >+</button>
                   </div>
                 </div>
@@ -183,45 +165,41 @@ export default function Lobby() {
                   { key: 'public_votes', label: 'Votos públicos', desc: 'Todos ven a quién vota cada uno' },
                   { key: 'reveal_role', label: 'Revelar rol al morir', desc: 'Se muestra el rol del ejecutado' },
                 ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between">
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p className="text-sm font-medium">{label}</p>
-                      <p className="text-xs text-gray-500">{desc}</p>
+                      <p style={s.configLabel}>{label}</p>
+                      <p style={s.configDesc}>{desc}</p>
                     </div>
-                    <button
+                    <div
                       onClick={() => saveConfig({ ...config, [key]: !config[key as keyof Config] })}
-                      className={`w-12 h-6 rounded-full transition-colors ${config[key as keyof Config] ? 'bg-purple-600' : 'bg-gray-700'}`}
+                      style={{ width: '44px', height: '24px', borderRadius: '12px', background: config[key as keyof Config] ? '#5a4830' : '#1a1815', border: `1px solid ${config[key as keyof Config] ? '#8a6840' : '#2a2520'}`, cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}
                     >
-                      <div className={`w-5 h-5 bg-white rounded-full mx-0.5 transition-transform ${config[key as keyof Config] ? 'translate-x-6' : 'translate-x-0'}`} />
-                    </button>
+                      <div style={{ position: 'absolute', top: '3px', left: config[key as keyof Config] ? '22px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: config[key as keyof Config] ? '#c8b89a' : '#3a3530', transition: 'left 0.2s' }} />
+                    </div>
                   </div>
                 ))}
 
-                <div className="border-t border-gray-800 pt-3 flex justify-between text-sm text-gray-400">
-                  <span>Lavianos normales</span>
-                  <span className={lavianos < 0 ? 'text-red-400' : 'text-gray-300'}>{lavianos}</span>
+                <div style={{ borderTop: '1px solid #2a2520', paddingTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={s.configDesc}>Lavianos normales</span>
+                  <span style={{ ...s.configLabel, color: lavianos < 0 ? '#a05040' : '#c8b89a' }}>{lavianos}</span>
                 </div>
 
                 {!startable && playerCount >= 6 && (
-                  <p className="text-red-400 text-xs text-center">
-                    {lavianos < 0 ? 'Demasiados roles especiales para los jugadores actuales' : 'Configuración inválida'}
+                  <p style={{ color: '#a05040', fontSize: '12px', textAlign: 'center', fontFamily: 'Georgia, serif' }}>
+                    {lavianos < 0 ? 'Demasiados roles especiales' : 'Configuración inválida'}
                   </p>
                 )}
               </div>
             )}
 
-            <button
-              onClick={startGame}
-              disabled={!startable}
-              className={`w-full rounded-lg px-4 py-3 font-medium transition-colors ${startable ? 'bg-purple-700 hover:bg-purple-600' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}`}
-            >
+            <button style={s.btnPrimary(startable)} onClick={startGame} disabled={!startable}>
               {playerCount < 6 ? `Faltan ${6 - playerCount} jugadores` : 'Comenzar partida'}
             </button>
           </>
         )}
 
         {!isHost && (
-          <p className="text-center text-gray-500 text-sm">Esperando a que el host inicie la partida...</p>
+          <p style={s.waiting}>Esperando al host...</p>
         )}
       </div>
     </div>
