@@ -140,14 +140,15 @@ export default function Dead() {
   <button style={btnHost} onClick={async () => {
     if (!room) return
     const mayorWasExecuted = room.last_executed_id === room.mayor_id
-    if (mayorWasExecuted) {
+    const mayorWasHunterTarget = room.hunter_target_id === room.mayor_id
+    if (mayorWasExecuted || mayorWasHunterTarget) {
       await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
       await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'day' }).eq('id', room.id)
     } else {
       await advance({ phase: 'night', day_phase: 'dawn', hunter_target_id: null })
     }
   }}>
-    {room?.last_executed_id === room?.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
+    {room?.last_executed_id === room?.mayor_id || room?.hunter_target_id === room?.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
   </button>
 )}
 

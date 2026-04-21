@@ -22,6 +22,7 @@ export type Room = {
     has_seer: boolean
     has_protector: boolean
     has_hunter: boolean
+    has_mayor: boolean
     public_votes: boolean
     reveal_role: boolean
   }

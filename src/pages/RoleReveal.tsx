@@ -51,11 +51,13 @@ export default function RoleReveal() {
     <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
 
       {/* Alcalde */}
-      <div style={{ width: '100%', maxWidth: '340px', background: 'rgba(13,16,21,0.9)', border: '1px solid #3a3020', borderRadius: '4px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>ALCALDE DEL PUEBLO</p>
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8a840' }}>{mayor?.name ?? '...'}</p>
-        {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — tu voto cuenta doble</p>}
-      </div>
+      {room.config?.has_mayor !== false && (
+  <div style={{ width: '100%', maxWidth: '340px', background: 'rgba(13,16,21,0.9)', border: '1px solid #3a3020', borderRadius: '4px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
+    <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>ALCALDE DEL PUEBLO</p>
+    <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8a840' }}>{mayor?.name ?? '...'}</p>
+    {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — tu voto cuenta doble</p>}
+  </div>
+)}
 
       {!revealed ? (
         <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>

@@ -60,8 +60,8 @@ export default function Lobby() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [showConfig, setShowConfig] = useState(false)
   const [config, setConfig] = useState<Config>({
-    wolves: 2, has_alpha: false, has_seer: false, has_protector: false, has_hunter: false, public_votes: true, reveal_role: true,
-  })
+    wolves: 2, has_alpha: false, has_seer: false, has_protector: false, has_hunter: false, has_mayor: true, public_votes: true, reveal_role: true,
+})
 
   const isHost = currentPlayer?.is_host
   const playerCount = players.length
@@ -104,7 +104,7 @@ export default function Lobby() {
     for (let i = 0; i < players.length; i++) {
       await supabase.from('players').update({ role: shuffled[i] }).eq('id', players[i].id)
     }
-    await supabase.from('rooms').update({ phase: 'mayor_vote' }).eq('id', room.id)
+    await supabase.from('rooms').update({ phase: config.has_mayor ? 'mayor_vote' : 'role_reveal' }).eq('id', room.id)
   }
 
   if (!room) return null
@@ -162,6 +162,7 @@ export default function Lobby() {
                   { key: 'has_seer', label: 'Vidente', desc: 'Ve el rol de un jugador cada noche' },
                   { key: 'has_protector', label: 'Protector', desc: 'Protege a un jugador cada noche' },
                   { key: 'has_hunter', label: 'Cazador', desc: 'Al morir elimina a otro jugador' },
+                  { key: 'has_mayor', label: 'Alcalde', desc: 'Un jugador lidera el pueblo con voto doble' },
                   { key: 'public_votes', label: 'Votos públicos', desc: 'Todos ven a quién vota cada uno' },
                   { key: 'reveal_role', label: 'Revelar rol al morir', desc: 'Se muestra el rol del ejecutado' },
                 ].map(({ key, label, desc }) => (

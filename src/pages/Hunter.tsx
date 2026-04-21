@@ -40,7 +40,12 @@ export default function Hunter() {
       }
     }
     const comingFromNight = room.day_phase === 'dawn'
-    await supabase.from('rooms').update({ hunter_target_id: targetId, phase: 'day', day_phase: comingFromNight ? 'dawn' : 'execution' }).eq('id', room.id)
+await supabase.from('rooms').update({
+  hunter_target_id: targetId,
+  phase: 'day',
+  day_phase: comingFromNight ? 'dawn' : 'execution',
+  last_victim_id: comingFromNight ? room.hunter_id : room.last_victim_id,
+}).eq('id', room.id)
   }
 
   async function skipShot() {

@@ -162,7 +162,7 @@ export default function Day() {
                 await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
                 await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'dawn' }).eq('id', room.id)
               } else {
-                await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
+                await supabase.from('rooms').update({ day_phase: 'debate', hunter_target_id: null }).eq('id', room.id)
               }
             }}>
               {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
@@ -248,7 +248,11 @@ export default function Day() {
             <div style={card}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>El pueblo ha ejecutado a</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>{executedPlayer.name}</p>
-              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {executedPlayer.role}</p>}
+              {revealRole && (
+  <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>
+    Era un {executedPlayer.role}{executedPlayer.infected ? ' (infectado)' : ''}
+  </p>
+)}
             </div>
           ) : (
             <div style={card}>
@@ -256,17 +260,26 @@ export default function Day() {
             </div>
           )}
 
+          {room.hunter_target_id && (
+  <div style={card}>
+    <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de morir, el cazador disparó a</p>
+    <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c08030', marginBottom: '6px' }}>{players.find(p => p.id === room.hunter_target_id)?.name}</p>
+    {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {players.find(p => p.id === room.hunter_target_id)?.role}</p>}
+  </div>
+)}
+
           {currentPlayer.is_host ? (
             <button style={btnHost} onClick={async () => {
               const mayorWasExecuted = room.last_executed_id === room.mayor_id
-              if (mayorWasExecuted) {
+              const mayorWasHunterTarget = room.hunter_target_id === room.mayor_id
+              if (mayorWasExecuted || mayorWasHunterTarget) {
                 await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
                 await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'day' }).eq('id', room.id)
               } else {
                 await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn', hunter_target_id: null }).eq('id', room.id)
               }
             }}>
-              {room.last_executed_id === room.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
+              {room.last_executed_id === room.mayor_id || room.hunter_target_id === room.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
             </button>
           ) : <p style={waiting}>Esperando al host...</p>}
         </div>
