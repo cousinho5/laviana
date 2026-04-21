@@ -26,13 +26,13 @@ export default function MayorVote() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` }, ({ new: updated }) => {
         if (updated.voted_for) {
           setLocalVotes(prev => {
-            const newVotes = { ...prev, [updated.id]: updated.voted_for }
+            const newVotes: Record<string, string> = { ...prev, [updated.id as string]: updated.voted_for as string }
 
             if (isHost && Object.keys(newVotes).length === totalPlayers) {
               const votesPerTarget = Object.values(newVotes).reduce<Record<string, number>>((acc, targetId) => {
-  acc[targetId] = (acc[targetId] || 0) + 1
-  return acc
-}, {})
+                acc[targetId] = (acc[targetId] || 0) + 1
+                return acc
+              }, {})
 
               const sorted = Object.entries(votesPerTarget).sort((a, b) => b[1] - a[1])
               const topVotes = sorted[0][1]
@@ -55,10 +55,10 @@ export default function MayorVote() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const votesPerTarget = Object.values(newVotes).reduce<Record<string, number>>((acc, targetId: string) => {
-  acc[targetId] = (acc[targetId] || 0) + 1
-  return acc
-}, {})
+  const votesPerTarget = Object.values(localVotes).reduce<Record<string, number>>((acc, targetId) => {
+    acc[targetId] = (acc[targetId] || 0) + 1
+    return acc
+  }, {})
 
   const totalVotes = Object.keys(localVotes).length
   const allVoted = totalVotes === players.length && players.length > 0
