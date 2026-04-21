@@ -8,10 +8,6 @@ export default function MayorVote() {
   const [hasVoted, setHasVoted] = useState(false)
   const [localVotes, setLocalVotes] = useState<Record<string, string>>({})
 
-  const roomRef = { current: room }
-  const playersRef = { current: players }
-  const currentPlayerRef = { current: currentPlayer }
-
   useEffect(() => {
     if (!room) return
     setLocalVotes({})
@@ -33,10 +29,10 @@ export default function MayorVote() {
             const newVotes = { ...prev, [updated.id]: updated.voted_for }
 
             if (isHost && Object.keys(newVotes).length === totalPlayers) {
-              const votesPerTarget = Object.values(newVotes).reduce((acc, targetId) => {
-                acc[targetId] = (acc[targetId] || 0) + 1
-                return acc
-              }, {} as Record<string, number>)
+              const votesPerTarget = Object.values(localVotes).reduce<Record<string, number>>((acc, targetId) => {
+  acc[targetId] = (acc[targetId] || 0) + 1
+  return acc
+}, {})
 
               const sorted = Object.entries(votesPerTarget).sort((a, b) => b[1] - a[1])
               const topVotes = sorted[0][1]
