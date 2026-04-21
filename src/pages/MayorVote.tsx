@@ -55,7 +55,7 @@ export default function MayorVote() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const votesPerTarget = Object.values(localVotes).reduce<Record<string, number>>((acc, targetId) => {
+  const votesPerTarget = Object.values(newVotes).reduce<Record<string, number>>((acc, targetId: string) => {
   acc[targetId] = (acc[targetId] || 0) + 1
   return acc
 }, {})
