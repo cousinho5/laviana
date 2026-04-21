@@ -22,29 +22,10 @@ export default function Day() {
 
   useEffect(() => {
     if (!room) return
-
-    supabase
-      .from('players')
-      .select()
-      .eq('room_id', room.id)
-      .then(({ data }) => { if (data) setPlayers(data) })
-
-    supabase
-      .from('day_votes')
-      .select()
-      .eq('room_id', room.id)
-      .eq('day', currentDay)
-      .then(({ data }) => { if (data) setDayVotes(data) })
-
+    supabase.from('players').select().eq('room_id', room.id).then(({ data }) => { if (data) setPlayers(data) })
+    supabase.from('day_votes').select().eq('room_id', room.id).eq('day', currentDay).then(({ data }) => { if (data) setDayVotes(data) })
     if (myPlayer?.role === 'vidente') {
-      supabase
-        .from('night_actions')
-        .select()
-        .eq('room_id', room.id)
-        .eq('night', room.night - 1)
-        .eq('player_id', currentPlayer?.id)
-        .eq('action_type', 'reveal')
-        .single()
+      supabase.from('night_actions').select().eq('room_id', room.id).eq('night', room.night - 1).eq('player_id', currentPlayer?.id).eq('action_type', 'reveal').single()
         .then(({ data }) => {
           if (data?.target_id) {
             const target = players.find(p => p.id === data.target_id)
@@ -52,89 +33,43 @@ export default function Day() {
           }
         })
     }
-
-    const channel = supabase
-      .channel(`day-${room.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'players',
-        filter: `room_id=eq.${room.id}`,
-      }, () => {
-        supabase.from('players').select().eq('room_id', room.id)
-          .then(({ data }) => { if (data) setPlayers(data) })
+    const channel = supabase.channel(`day-${room.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'players', filter: `room_id=eq.${room.id}` }, () => {
+        supabase.from('players').select().eq('room_id', room.id).then(({ data }) => { if (data) setPlayers(data) })
       })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'rooms',
-        filter: `id=eq.${room.id}`,
-      }, ({ new: updated }) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${room.id}` }, ({ new: updated }) => {
         setRoom(updated as any)
       })
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'day_votes',
-        filter: `room_id=eq.${room.id}`,
-      }, () => {
-        supabase
-          .from('day_votes')
-          .select()
-          .eq('room_id', room.id)
-          .eq('day', currentDay)
-          .then(({ data }) => {
-            if (data) setDayVotes(data)
-          })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'day_votes', filter: `room_id=eq.${room.id}` }, () => {
+        supabase.from('day_votes').select().eq('room_id', room.id).eq('day', currentDay).then(({ data }) => { if (data) setDayVotes(data) })
       })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [room])
 
   async function selectTarget(id: string) {
     if (!currentPlayer || !room || hasVoted || !isAlive) return
     setSelectedId(id)
-
     if (pendingVoteId) {
       await supabase.from('day_votes').update({ target_id: id }).eq('id', pendingVoteId)
     } else {
-      const { data } = await supabase
-        .from('day_votes')
-        .insert({
-          room_id: room.id,
-          player_id: currentPlayer.id,
-          target_id: id,
-          confirmed: false,
-          abstain: false,
-          day: currentDay,
-        })
-        .select()
-        .single()
-
+      const { data } = await supabase.from('day_votes').insert({ room_id: room.id, player_id: currentPlayer.id, target_id: id, confirmed: false, abstain: false, day: currentDay }).select().single()
       if (data) setPendingVoteId(data.id)
     }
   }
 
   async function confirmVote(abstain: boolean = false) {
     if (!currentPlayer || !room || hasVoted || !isAlive) return
-
     if (pendingVoteId) {
-      await supabase
-        .from('day_votes')
-        .update({ confirmed: true, abstain, target_id: abstain ? null : selectedId })
-        .eq('id', pendingVoteId)
+      await supabase.from('day_votes').update({ confirmed: true, abstain, target_id: abstain ? null : selectedId }).eq('id', pendingVoteId)
     } else {
-      await supabase.from('day_votes').insert({
-        room_id: room.id,
-        player_id: currentPlayer.id,
-        target_id: abstain ? null : selectedId,
-        confirmed: true,
-        abstain,
-        day: currentDay,
-      })
+      await supabase.from('day_votes').insert({ room_id: room.id, player_id: currentPlayer.id, target_id: abstain ? null : selectedId, confirmed: true, abstain, day: currentDay })
     }
-
     setHasVoted(true)
   }
 
   const confirmedVotes = dayVotes.filter(v => v.confirmed)
   const pendingVotes = dayVotes.filter(v => !v.confirmed)
-
   const voteCountByTarget: Record<string, number> = {}
   confirmedVotes.filter(v => !v.abstain).forEach(v => {
     const weight = v.player_id === room?.mayor_id ? 2 : 1
@@ -143,307 +78,199 @@ export default function Day() {
 
   if (!room || !currentPlayer) return null
 
+  const card = { background: 'rgba(13,16,21,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '20px', textAlign: 'center' as const, marginBottom: '12px' }
+  const label = { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }
+  const btnHost = { width: '100%', background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '13px 16px', color: '#7a6a55', fontFamily: 'Georgia, serif', fontSize: '13px', cursor: 'pointer' }
+  const btnPrimary = { width: '100%', background: 'rgba(42,34,24,0.9)', border: '1px solid #5a4830', borderRadius: '4px', padding: '13px 16px', color: '#c8b89a', fontFamily: 'Georgia, serif', fontSize: '14px', cursor: 'pointer' }
+  const btnDisabled = { width: '100%', background: 'rgba(13,16,21,0.5)', border: '1px solid #1a1815', borderRadius: '4px', padding: '13px 16px', color: '#3a3530', fontFamily: 'Georgia, serif', fontSize: '14px', cursor: 'not-allowed' }
+  const waiting = { fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30', textAlign: 'center' as const, letterSpacing: '1px' }
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
+    <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
 
       {dayPhase === 'new_mayor' && (
-        <div className="w-full max-w-sm flex flex-col gap-4 text-center">
-          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">
-            Nuevo Alcalde
-          </p>
-          <div className="bg-yellow-950 border border-yellow-900 rounded-xl p-6">
-            <p className="text-gray-400 text-sm mb-2">El pueblo ha elegido como nuevo Alcalde a</p>
-            <p className="text-yellow-400 text-2xl font-bold">
-              {players.find(p => p.id === room.mayor_id)?.name}
-            </p>
+        <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>
+          <p style={label}>NUEVO ALCALDE</p>
+          <div style={{ ...card, border: '1px solid #3a3020' }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a5a45', marginBottom: '8px' }}>El pueblo ha elegido como nuevo Alcalde a</p>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8a840' }}>{players.find(p => p.id === room.mayor_id)?.name}</p>
           </div>
-          {currentPlayer.is_host ? (
-            <button
-              onClick={async () => {
-                await supabase.from('rooms').update({
-                  phase: 'night',
-                  day_phase: 'dawn',
-                  hunter_target_id: null,
-                }).eq('id', room.id)
-              }}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-            >
-              Comenzar siguiente noche
-            </button>
-          ) : (
-            <p className="text-gray-600 text-sm">Esperando al host...</p>
-          )}
+          {currentPlayer.is_host
+            ? <button style={btnHost} onClick={async () => { await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn', hunter_target_id: null }).eq('id', room.id) }}>Comenzar siguiente noche</button>
+            : <p style={waiting}>Esperando al host...</p>}
         </div>
       )}
 
       {dayPhase === 'dawn' && (
-        <div className="w-full max-w-sm flex flex-col gap-4">
-          <p className="text-gray-500 text-xs uppercase tracking-widest text-center mb-2">
-            Día {currentDay}
-          </p>
+        <div style={{ width: '100%', maxWidth: '340px' }}>
+          <p style={{ ...label, textAlign: 'center', marginBottom: '16px' }}>DÍA {currentDay}</p>
 
           {room.last_victim_infected && myPlayer?.infected && (
-            <div className="bg-red-950 border border-red-900 rounded-xl p-6 text-center">
-              <p className="text-red-400 text-xl font-bold mb-2">Has sido infectado</p>
-              <p className="text-gray-400 text-sm">Los lobos te han convertido en uno de los suyos.</p>
+            <div style={{ ...card, border: '1px solid #4a2020', marginBottom: '12px' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '18px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>Has sido infectado</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a4040' }}>Los lobos te han convertido en uno de los suyos.</p>
             </div>
           )}
 
           {room.last_victim_saved ? (
-            <div className="bg-gray-900 rounded-xl p-6 text-center">
-              <p className="text-green-400 text-lg font-medium mb-2">Nadie ha muerto esta noche</p>
-              <p className="text-gray-400 text-sm">El protector salvó a alguien.</p>
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a9a50', marginBottom: '6px' }}>Nadie ha muerto esta noche</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a5a40' }}>El protector salvó a alguien.</p>
             </div>
           ) : lastVictim ? (
-            <div className="bg-gray-900 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-2">Esta mañana encontraron el cuerpo de</p>
-              <p className="text-red-400 text-2xl font-bold mb-2">{lastVictim.name}</p>
-              {revealRole && (
-                <p className="text-gray-500 text-sm">Era un {lastVictim.role}</p>
-              )}
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Esta mañana encontraron el cuerpo de</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>{lastVictim.name}</p>
+              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {lastVictim.role}</p>}
             </div>
           ) : (
-            <div className="bg-gray-900 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-lg">Nadie ha muerto esta noche.</p>
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>Nadie ha muerto esta noche.</p>
             </div>
           )}
 
           {room.hunter_target_id && (
-            <div className="bg-gray-900 rounded-xl p-4 text-center">
-              <p className="text-gray-400 text-sm mb-1">Antes de morir, el cazador disparó a</p>
-              <p className="text-orange-400 text-lg font-bold">
-                {players.find(p => p.id === room.hunter_target_id)?.name}
-              </p>
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de morir, el cazador disparó a</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c08030' }}>{players.find(p => p.id === room.hunter_target_id)?.name}</p>
             </div>
           )}
 
           {seerResult && (
-            <div className="bg-purple-950 border border-purple-900 rounded-xl p-4">
-              <p className="text-xs text-purple-400 mb-2 uppercase tracking-widest">Tu investigación</p>
-              <p className="text-purple-300 text-sm">
-                <span className="font-medium text-white">{seerResult.name}</span> es un{' '}
-                <span className="font-medium text-white">{seerResult.role}</span>
+            <div style={{ ...card, border: '1px solid #3a2860', textAlign: 'left' }}>
+              <p style={{ ...label, marginBottom: '8px' }}>TU INVESTIGACIÓN</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8a7ab0' }}>
+                <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.name}</span> es un <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.role}</span>
               </p>
             </div>
           )}
 
-          <div className="bg-gray-900 rounded-xl p-4">
-            <p className="text-gray-500 text-xs mb-3 uppercase tracking-widest">
-              Vivos ({alivePlayers.length})
-            </p>
+          <div style={{ ...card, textAlign: 'left', marginBottom: '16px' }}>
+            <p style={{ ...label, marginBottom: '12px' }}>VIVOS ({alivePlayers.length})</p>
             {alivePlayers.map(p => (
-              <p key={p.id} className="text-gray-300 text-sm py-1">
+              <p key={p.id} style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a', padding: '4px 0' }}>
                 {p.name}
-                {p.id === room.mayor_id && (
-                  <span className="text-yellow-400 text-xs ml-2">Alcalde</span>
-                )}
+                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
               </p>
             ))}
           </div>
 
           {currentPlayer.is_host ? (
-            <button
-              onClick={async () => {
-                const mayorIsDead = !alivePlayers.find(p => p.id === room.mayor_id)
-                if (mayorIsDead) {
-                  await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
-                  await supabase.from('rooms').update({
-                    phase: 'mayor_replace',
-                    mayor_vote_reason: 'dawn',
-                  }).eq('id', room.id)
-                } else {
-                  await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
-                }
-              }}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-            >
+            <button style={btnHost} onClick={async () => {
+              const mayorIsDead = !alivePlayers.find(p => p.id === room.mayor_id)
+              if (mayorIsDead) {
+                await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+                await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'dawn' }).eq('id', room.id)
+              } else {
+                await supabase.from('rooms').update({ day_phase: 'debate' }).eq('id', room.id)
+              }
+            }}>
               {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
             </button>
-          ) : (
-            <p className="text-gray-600 text-sm text-center">Esperando al host...</p>
-          )}
+          ) : <p style={waiting}>Esperando al host...</p>}
         </div>
       )}
 
       {dayPhase === 'debate' && (
-        <div className="w-full max-w-sm flex flex-col gap-4">
-          <p className="text-gray-500 text-xs uppercase tracking-widest text-center mb-2">
-            Día {currentDay} — Debate
-          </p>
-          <p className="text-gray-300 text-lg font-medium text-center">Discutid entre vosotros</p>
-          <p className="text-gray-500 text-sm text-center">Sin chat — todo es presencial</p>
+        <div style={{ width: '100%', maxWidth: '340px' }}>
+          <p style={{ ...label, textAlign: 'center' }}>DÍA {currentDay} — DEBATE</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8b89a', textAlign: 'center', marginBottom: '6px' }}>Discutid entre vosotros</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', textAlign: 'center', marginBottom: '24px' }}>Sin chat — todo es presencial</p>
 
-          <div className="bg-gray-900 rounded-xl p-4">
-            <p className="text-gray-500 text-xs mb-3 uppercase tracking-widest">
-              Vivos ({alivePlayers.length})
-            </p>
+          <div style={{ ...card, textAlign: 'left', marginBottom: '16px' }}>
+            <p style={{ ...label, marginBottom: '12px' }}>VIVOS ({alivePlayers.length})</p>
             {alivePlayers.map(p => (
-              <p key={p.id} className="text-gray-300 text-sm py-1">
+              <p key={p.id} style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a', padding: '4px 0' }}>
                 {p.name}
-                {p.id === room.mayor_id && (
-                  <span className="text-yellow-400 text-xs ml-2">Alcalde</span>
-                )}
+                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
               </p>
             ))}
           </div>
 
           {currentPlayer.is_host ? (
-            <button
-              onClick={async () => {
-                await supabase.from('day_votes').delete().eq('room_id', room.id).eq('day', currentDay)
-                await supabase.from('rooms').update({ day_phase: 'vote' }).eq('id', room.id)
-                setHasVoted(false)
-                setSelectedId(null)
-                setPendingVoteId(null)
-              }}
-              className="w-full bg-purple-700 hover:bg-purple-600 rounded-lg px-4 py-3 font-medium transition-colors"
-            >
-              Iniciar votación
-            </button>
-          ) : (
-            <p className="text-gray-600 text-sm text-center">Esperando al host para votar...</p>
-          )}
+            <button style={btnPrimary} onClick={async () => {
+              await supabase.from('day_votes').delete().eq('room_id', room.id).eq('day', currentDay)
+              await supabase.from('rooms').update({ day_phase: 'vote' }).eq('id', room.id)
+              setHasVoted(false); setSelectedId(null); setPendingVoteId(null)
+            }}>Iniciar votación</button>
+          ) : <p style={waiting}>Esperando al host para votar...</p>}
         </div>
       )}
 
       {dayPhase === 'vote' && (
-        <div className="w-full max-w-sm flex flex-col gap-3">
-          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2 text-center">
-            Día {currentDay} — Votación
-          </p>
-
-          {!isAlive && (
-            <p className="text-gray-600 text-sm text-center mb-2">
-              Estás muerto — solo puedes observar
-            </p>
-          )}
+        <div style={{ width: '100%', maxWidth: '340px' }}>
+          <p style={{ ...label, textAlign: 'center', marginBottom: '16px' }}>DÍA {currentDay} — VOTACIÓN</p>
+          {!isAlive && <p style={{ ...waiting, marginBottom: '12px' }}>Estás muerto — solo puedes observar</p>}
 
           {alivePlayers.map(player => {
             const confirmedVoteCount = voteCountByTarget[player.id] || 0
             const pendingVotersForThis = pendingVotes.filter(v => v.target_id === player.id)
-            const pendingVoterNames = pendingVotersForThis
-              .map(v => players.find(p => p.id === v.player_id)?.name)
-              .filter(Boolean)
+            const pendingVoterNames = pendingVotersForThis.map(v => players.find(p => p.id === v.player_id)?.name).filter(Boolean)
             const isMyPending = pendingVotes.find(v => v.player_id === currentPlayer.id)?.target_id === player.id
             const isMe = player.id === currentPlayer.id
             const hasConfirmed = confirmedVotes.find(v => v.player_id === player.id)
+            const isSelected = selectedId === player.id
 
             return (
-              <button
-                key={player.id}
-                onClick={() => !isMe && selectTarget(player.id)}
-                disabled={isMe || hasVoted || !isAlive}
-                className={`rounded-lg px-4 py-3 flex items-center justify-between transition-colors
-                  ${isMe ? 'bg-gray-900 text-gray-600 cursor-not-allowed' : ''}
-                  ${!isMe && selectedId === player.id ? 'bg-purple-800 border border-purple-500' : ''}
-                  ${!isMe && selectedId !== player.id ? 'bg-gray-800 hover:bg-gray-700' : ''}
-                `}
-              >
-                <span>
+              <button key={player.id} onClick={() => !isMe && selectTarget(player.id)} disabled={isMe || hasVoted || !isAlive}
+                style={{ width: '100%', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', cursor: isMe || hasVoted || !isAlive ? 'not-allowed' : 'pointer', background: isSelected ? 'rgba(42,34,24,0.95)' : 'rgba(13,16,21,0.9)', border: isSelected ? '1px solid #8a6840' : '1px solid #2a2520', opacity: isMe ? 0.4 : 1 }}>
+                <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a' }}>
                   {player.name}
-                  {player.id === room.mayor_id && (
-                    <span className="text-yellow-400 text-xs ml-2">Alcalde</span>
-                  )}
-                  {isMe && <span className="text-gray-500 text-xs ml-2">(tú)</span>}
+                  {player.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
+                  {isMe && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30', marginLeft: '8px' }}>(tú)</span>}
                 </span>
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  {publicVotes && confirmedVoteCount > 0 && (
-                    <span className="text-xs bg-purple-900 text-purple-300 px-2 py-1 rounded-full">
-                      {confirmedVoteCount} voto{confirmedVoteCount > 1 ? 's' : ''}
-                    </span>
-                  )}
-                  {publicVotes && pendingVoterNames.length > 0 && !isMyPending && (
-                    <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full">
-                      {pendingVoterNames.join(', ')} quiere{pendingVoterNames.length > 1 ? 'n' : ''} votar
-                    </span>
-                  )}
-                  {isMyPending && (
-                    <span className="text-xs text-gray-500">tu selección</span>
-                  )}
-                  {!publicVotes && hasConfirmed && (
-                    <span className="text-xs text-gray-500">votó</span>
-                  )}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {publicVotes && confirmedVoteCount > 0 && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a6840', border: '1px solid #5a4830', borderRadius: '3px', padding: '2px 8px' }}>{confirmedVoteCount} voto{confirmedVoteCount > 1 ? 's' : ''}</span>}
+                  {publicVotes && pendingVoterNames.length > 0 && !isMyPending && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', border: '1px solid #5a4820', borderRadius: '3px', padding: '2px 8px' }}>{pendingVoterNames.join(', ')}</span>}
+                  {isMyPending && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30' }}>tu selección</span>}
+                  {!publicVotes && hasConfirmed && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30' }}>votó</span>}
                 </div>
               </button>
             )
           })}
 
           {isAlive && !hasVoted && (
-            <div className="flex flex-col gap-2 mt-2">
-              <button
-                onClick={() => confirmVote(false)}
-                disabled={!selectedId}
-                className={`w-full rounded-lg px-4 py-3 font-medium transition-colors
-                  ${selectedId ? 'bg-purple-700 hover:bg-purple-600' : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
-                `}
-              >
-                Confirmar voto
-              </button>
-              <button
-                onClick={() => confirmVote(true)}
-                className="w-full rounded-lg px-4 py-3 text-sm text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                Abstenerme
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+              <button style={selectedId ? btnPrimary : btnDisabled} onClick={() => confirmVote(false)} disabled={!selectedId}>Confirmar voto</button>
+              <button style={{ ...btnHost, color: '#4a3f30' }} onClick={() => confirmVote(true)}>Abstenerme</button>
             </div>
           )}
 
-          {hasVoted && (
-            <p className="text-gray-500 text-sm text-center mt-2">
-              Esperando votos... ({confirmedVotes.length}/{alivePlayers.length})
-            </p>
-          )}
+          {hasVoted && <p style={{ ...waiting, marginTop: '12px' }}>Esperando votos... ({confirmedVotes.length}/{alivePlayers.length})</p>}
         </div>
       )}
 
       {dayPhase === 'execution' && (
-        <div className="w-full max-w-sm flex flex-col gap-4 text-center">
-          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">
-            Día {currentDay} — Ejecución
-          </p>
+        <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>
+          <p style={{ ...label, marginBottom: '16px' }}>DÍA {currentDay} — EJECUCIÓN</p>
 
           {executedPlayer ? (
-            <div className="bg-gray-900 rounded-xl p-6">
-              <p className="text-gray-400 text-sm mb-2">El pueblo ha ejecutado a</p>
-              <p className="text-red-400 text-2xl font-bold mb-2">{executedPlayer.name}</p>
-              {revealRole && (
-                <p className="text-gray-500 text-sm">Era un {executedPlayer.role}</p>
-              )}
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>El pueblo ha ejecutado a</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>{executedPlayer.name}</p>
+              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {executedPlayer.role}</p>}
             </div>
           ) : (
-            <div className="bg-gray-900 rounded-xl p-6">
-              <p className="text-gray-400 text-lg">El pueblo no ha ejecutado a nadie hoy.</p>
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>El pueblo no ha ejecutado a nadie hoy.</p>
             </div>
           )}
 
           {currentPlayer.is_host ? (
-            <button
-              onClick={async () => {
-                const mayorWasExecuted = room.last_executed_id === room.mayor_id
-                if (mayorWasExecuted) {
-                  await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
-                  await supabase.from('rooms').update({
-                    phase: 'mayor_replace',
-                    mayor_vote_reason: 'day',
-                  }).eq('id', room.id)
-                } else {
-                  await supabase.from('rooms').update({
-                    phase: 'night',
-                    day_phase: 'dawn',
-                    hunter_target_id: null,
-                  }).eq('id', room.id)
-                }
-              }}
-              className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
-            >
+            <button style={btnHost} onClick={async () => {
+              const mayorWasExecuted = room.last_executed_id === room.mayor_id
+              if (mayorWasExecuted) {
+                await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+                await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'day' }).eq('id', room.id)
+              } else {
+                await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn', hunter_target_id: null }).eq('id', room.id)
+              }
+            }}>
               {room.last_executed_id === room.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
             </button>
-          ) : (
-            <p className="text-gray-600 text-sm">Esperando al host...</p>
-          )}
+          ) : <p style={waiting}>Esperando al host...</p>}
         </div>
       )}
-
     </div>
   )
 }

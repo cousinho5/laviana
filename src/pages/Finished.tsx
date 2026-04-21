@@ -19,54 +19,57 @@ export default function Finished() {
   const winners = winner === 'lobos' ? wolves : villagers
   const losers = winner === 'lobos' ? villagers : wolves
 
-  async function playAgain() {
+  function playAgain() {
     setRoom(null as any)
     setPlayers([])
   }
 
   if (!room) return null
 
+  const card = { background: 'rgba(13,16,21,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '20px', marginBottom: '12px' }
+  const label = { fontFamily: 'Georgia, serif', fontSize: '11px', letterSpacing: '3px', marginBottom: '12px' }
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm flex flex-col gap-6">
+    <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
         {winner === 'lobos' ? (
-          <div className="text-center">
-            <p className="text-xs text-red-400 uppercase tracking-widest mb-2">Victoria</p>
-            <h1 className="text-4xl font-bold text-red-400 mb-2">Los lobos ganan</h1>
-            <p className="text-gray-500 text-sm">Laviana ha caído en la oscuridad.</p>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <p style={{ ...label, color: '#8a4040' }}>VICTORIA</p>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#c04040', marginBottom: '8px' }}>Los lobos ganan</h1>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3030', letterSpacing: '1px' }}>Laviana ha caído en la oscuridad.</p>
           </div>
         ) : (
-          <div className="text-center">
-            <p className="text-xs text-green-400 uppercase tracking-widest mb-2">Victoria</p>
-            <h1 className="text-4xl font-bold text-green-400 mb-2">El pueblo gana</h1>
-            <p className="text-gray-500 text-sm">Laviana ha sobrevivido a la maldición.</p>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <p style={{ ...label, color: '#4a7040' }}>VICTORIA</p>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#6a9a50', marginBottom: '8px' }}>El pueblo gana</h1>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#3a4a30', letterSpacing: '1px' }}>Laviana ha sobrevivido a la maldición.</p>
           </div>
         )}
 
-        <div className="bg-gray-900 rounded-xl p-4">
-          <p className="text-xs uppercase tracking-widest mb-3 text-green-400">Ganadores</p>
+        <div style={{ ...card, border: '1px solid #2a3a20' }}>
+          <p style={{ ...label, color: '#5a8040' }}>GANADORES</p>
           {winners.map(p => (
-            <div key={p.id} className="flex items-center justify-between py-1">
-              <span className="text-white text-sm">{p.name}</span>
-              <span className="text-gray-500 text-xs">{roleLabels[p.role ?? ''] ?? p.role}</span>
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1a2015' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a' }}>{p.name}</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#5a7040' }}>{roleLabels[p.role ?? ''] ?? p.role}</span>
             </div>
           ))}
         </div>
 
-        <div className="bg-gray-900 rounded-xl p-4">
-          <p className="text-xs uppercase tracking-widest mb-3 text-red-400">Perdedores</p>
+        <div style={{ ...card, border: '1px solid #3a2020' }}>
+          <p style={{ ...label, color: '#8a4040' }}>PERDEDORES</p>
           {losers.map(p => (
-            <div key={p.id} className="flex items-center justify-between py-1">
-              <span className="text-gray-400 text-sm">{p.name}</span>
-              <span className="text-gray-600 text-xs">{roleLabels[p.role ?? ''] ?? p.role}</span>
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #201515' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#6a5a55' }}>{p.name}</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3030' }}>{roleLabels[p.role ?? ''] ?? p.role}</span>
             </div>
           ))}
         </div>
 
         <button
           onClick={playAgain}
-          className="w-full bg-gray-800 hover:bg-gray-700 rounded-lg px-4 py-3 text-sm text-gray-300 transition-colors"
+          style={{ width: '100%', background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '13px 16px', color: '#7a6a55', fontFamily: 'Georgia, serif', fontSize: '13px', cursor: 'pointer', marginTop: '8px' }}
         >
           Volver al inicio
         </button>
