@@ -22,12 +22,9 @@ function App() {
   if (room.phase === 'hunter') return <Hunter />
 
   if (room.phase === 'mayor_replace') {
-    const deadMayorId = room.mayor_vote_reason === 'day'
-      ? room.last_executed_id
-      : room.last_victim_id
-    const iAmAlreadyDead = myPlayer && !myPlayer.is_alive && currentPlayer?.id !== deadMayorId
-    return iAmAlreadyDead ? <Dead /> : <MayorReplace />
-  }
+  const iAmAlreadyDead = myPlayer && !myPlayer.is_alive
+  return iAmAlreadyDead ? <Dead /> : <MayorReplace />
+}
 
   if (isDead) return <Dead />
 

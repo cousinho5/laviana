@@ -29,7 +29,7 @@ export default function MayorVote() {
             const newVotes = { ...prev, [updated.id]: updated.voted_for }
 
             if (isHost && Object.keys(newVotes).length === totalPlayers) {
-              const votesPerTarget = Object.values(localVotes).reduce<Record<string, number>>((acc, targetId) => {
+              const votesPerTarget = Object.values(newVotes).reduce<Record<string, number>>((acc, targetId) => {
   acc[targetId] = (acc[targetId] || 0) + 1
   return acc
 }, {})
@@ -55,10 +55,10 @@ export default function MayorVote() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  const votesPerTarget = Object.values(localVotes).reduce((acc, targetId) => {
-    acc[targetId] = (acc[targetId] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  const votesPerTarget = Object.values(localVotes).reduce<Record<string, number>>((acc, targetId) => {
+  acc[targetId] = (acc[targetId] || 0) + 1
+  return acc
+}, {})
 
   const totalVotes = Object.keys(localVotes).length
   const allVoted = totalVotes === players.length && players.length > 0
