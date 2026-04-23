@@ -41,7 +41,7 @@ export default function Intro() {
   // Comprobar si todos han terminado — solo el host avanza
   useEffect(() => {
     if (!room || !currentPlayer?.is_host) return
-    const allDone = players.length > 0 && players.every(p => p.voted_for === 'done')
+    const allDone = players.length > 0 && players.every(p => p.voted_for === '00000000-0000-0000-0000-000000000000')
     if (!allDone) return
 
     async function advance() {
@@ -58,13 +58,19 @@ export default function Intro() {
   }, [players])
 
   async function markDone() {
-    if (!currentPlayer || localDone) return
-    setLocalDone(true)
-    if (videoRef.current) videoRef.current.pause()
-    await supabase.from('players').update({ voted_for: 'done' }).eq('id', currentPlayer.id)
-  }
+  if (!currentPlayer || localDone) return
+  setLocalDone(true)
+  if (videoRef.current) videoRef.current.pause()
+  
+  const { error } = await supabase
+  .from('players')
+  .update({ voted_for: '00000000-0000-0000-0000-000000000000' })
+  .eq('id', currentPlayer.id)
+  
+  console.log('markDone result:', { playerId: currentPlayer.id, error })
+}
 
-  const donePlayers = players.filter(p => p.voted_for === 'done').length
+  const donePlayers = players.filter(p => p.voted_for === '00000000-0000-0000-0000-000000000000').length
   const totalPlayers = players.length
 
   if (localDone) {
