@@ -9,12 +9,14 @@ import Day from './pages/Day'
 import Dead from './pages/Dead'
 import Finished from './pages/Finished'
 import Hunter from './pages/Hunter'
+import Intro from './pages/Intro'
 
 function App() {
   const { room, players, currentPlayer } = useGameStore()
 
   if (!room) return <Home />
   if (room.phase === 'finished') return <Finished />
+  if (room.phase === 'intro') return <Intro />
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const isDead = myPlayer && !myPlayer.is_alive

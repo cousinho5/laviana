@@ -105,7 +105,7 @@ export default function Lobby() {
     for (let i = 0; i < players.length; i++) {
       await supabase.from('players').update({ role: shuffled[i] }).eq('id', players[i].id)
     }
-    await supabase.from('rooms').update({ phase: config.has_mayor ? 'mayor_vote' : 'role_reveal' }).eq('id', room.id)
+    await supabase.from('rooms').update({ phase: 'intro' }).eq('id', room.id)
   }
 
   if (!room) return null
