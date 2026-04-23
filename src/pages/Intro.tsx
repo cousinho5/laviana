@@ -3,13 +3,17 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 
 export default function Intro() {
-  const { room, currentPlayer, setRoom } = useGameStore()
+  const { room, players, currentPlayer, setRoom, setPlayers } = useGameStore()
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [skippedLocally, setSkippedLocally] = useState(false)
+  const [localDone, setLocalDone] = useState(false)
 
-  // Escuchar cambios de fase en tiempo real
   useEffect(() => {
     if (!room) return
+
+    // Cargar jugadores frescos
+    supabase.from('players').select().eq('room_id', room.id)
+      .then(({ data }) => { if (data) setPlayers(data) })
+
     const channel = supabase
       .channel(`intro-${room.id}`)
       .on('postgres_changes', {
@@ -20,44 +24,50 @@ export default function Intro() {
       }, ({ new: updated }) => {
         setRoom(updated as any)
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'players',
+        filter: `room_id=eq.${room.id}`,
+      }, () => {
+        supabase.from('players').select().eq('room_id', room.id)
+          .then(({ data }) => { if (data) setPlayers(data) })
+      })
       .subscribe()
+
     return () => { supabase.removeChannel(channel) }
   }, [room?.id])
 
-  async function advanceAsHost() {
+  // Comprobar si todos han terminado — solo el host avanza
+  useEffect(() => {
     if (!room || !currentPlayer?.is_host) return
-    // Leer config fresca de la DB para evitar que llegue undefined
-    const { data: freshRoom } = await supabase
-      .from('rooms')
-      .select('config')
-      .eq('id', room.id)
-      .single()
-    const hasMayor = freshRoom?.config?.has_mayor ?? true
-    const nextPhase = hasMayor ? 'mayor_vote' : 'role_reveal'
-    await supabase.from('rooms').update({ phase: nextPhase }).eq('id', room.id)
-  }
+    const allDone = players.length > 0 && players.every(p => p.voted_for === 'done')
+    if (!allDone) return
 
-  function handleSkip() {
-    if (currentPlayer?.is_host) {
-      // Host: pausa el vídeo y avanza para todos
-      if (videoRef.current) videoRef.current.pause()
-      advanceAsHost()
-    } else {
-      // No-host: solo oculta el vídeo localmente y espera
-      setSkippedLocally(true)
+    async function advance() {
+      const { data: freshRoom } = await supabase
+        .from('rooms').select('config').eq('id', room!.id).single()
+      const hasMayor = freshRoom?.config?.has_mayor ?? true
+      const nextPhase = hasMayor ? 'mayor_vote' : 'role_reveal'
+      // Limpiar voted_for antes de avanzar
+      await supabase.from('players').update({ voted_for: null }).eq('room_id', room!.id)
+      await supabase.from('rooms').update({ phase: nextPhase }).eq('id', room!.id)
     }
+
+    advance()
+  }, [players])
+
+  async function markDone() {
+    if (!currentPlayer || localDone) return
+    setLocalDone(true)
+    if (videoRef.current) videoRef.current.pause()
+    await supabase.from('players').update({ voted_for: 'done' }).eq('id', currentPlayer.id)
   }
 
-  function handleEnded() {
-    if (currentPlayer?.is_host) {
-      advanceAsHost()
-    } else {
-      setSkippedLocally(true)
-    }
-  }
+  const donePlayers = players.filter(p => p.voted_for === 'done').length
+  const totalPlayers = players.length
 
-  // Pantalla de espera para no-host que saltaron
-  if (skippedLocally) {
+  if (localDone) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -66,14 +76,23 @@ export default function Intro() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: '12px',
       }}>
+        <p style={{
+          fontFamily: 'Georgia, serif',
+          fontSize: '11px',
+          color: '#6a5a45',
+          letterSpacing: '3px',
+        }}>
+          ESPERANDO AL RESTO
+        </p>
         <p style={{
           fontFamily: 'Georgia, serif',
           fontSize: '13px',
           color: '#4a3f30',
           letterSpacing: '1px',
         }}>
-          Esperando al host...
+          {donePlayers}/{totalPlayers} listos
         </p>
       </div>
     )
@@ -94,7 +113,7 @@ export default function Intro() {
         src="/assets/intro.mp4"
         autoPlay
         playsInline
-        onEnded={handleEnded}
+        onEnded={markDone}
         style={{
           width: '100%',
           height: '100vh',
@@ -103,7 +122,7 @@ export default function Intro() {
       />
 
       <button
-        onClick={handleSkip}
+        onClick={markDone}
         style={{
           position: 'absolute',
           bottom: '48px',
