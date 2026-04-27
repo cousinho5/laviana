@@ -6,7 +6,9 @@ function generateCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
-export default function Home() {
+type Props = { onBack: () => void }
+
+export default function Home({ onBack }: Props) {
   const [name, setName] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -62,47 +64,28 @@ export default function Home() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0c0f',
+backgroundImage: 'url(/assets/fondo_inicio.png)',
+backgroundSize: 'cover',
+backgroundPosition: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden', backgroundImage: 'url(/assets/fondo_inicio.png)', backgroundSize: 'cover', backgroundPosition: 'center',}}>
 
-      {/* Luna */}
-      <div style={{ position: 'absolute', top: '40px', right: '40px', width: '60px', height: '60px', borderRadius: '50%', background: '#e8e0c8', opacity: 0.9 }} />
-
-      {/* Estrellas */}
-      {[[60,50],[150,30],[250,70],[400,20],[480,55],[580,35],[620,80],[100,100],[350,45]].map(([x,y], i) => (
-        <div key={i} style={{ position: 'absolute', left: `${x/6.8}%`, top: `${y}px`, width: '2px', height: '2px', borderRadius: '50%', background: '#ffffff', opacity: 0.5 }} />
-      ))}
-
-      {/* Montañas SVG en la parte inferior */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '45%' }}>
-        <svg width="100%" height="100%" viewBox="0 0 400 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M-10 300 L60 140 L120 200 L180 100 L240 180 L300 120 L360 170 L410 130 L410 300Z" fill="#111418"/>
-          <path d="M-10 300 L40 180 L100 240 L160 160 L220 220 L290 150 L350 200 L410 170 L410 300Z" fill="#161b20"/>
-          <path d="M-10 300 L30 220 L90 270 L150 200 L210 250 L280 190 L340 240 L410 210 L410 300Z" fill="#1a2028"/>
-          {/* Niebla */}
-          <ellipse cx="200" cy="290" rx="250" ry="30" fill="#1e2832" opacity="0.7"/>
-          {/* Pueblo silueta */}
-          <rect x="60" y="255" width="12" height="20" fill="#0d1115"/>
-          <polygon points="60,255 66,244 72,255" fill="#0d1115"/>
-          <rect x="78" y="260" width="10" height="15" fill="#0d1115"/>
-          <polygon points="78,260 83,251 88,260" fill="#0d1115"/>
-          <rect x="270" y="258" width="14" height="18" fill="#0d1115"/>
-          <polygon points="270,258 277,246 284,258" fill="#0d1115"/>
-          {/* Árboles */}
-          <rect x="30" y="262" width="3" height="18" fill="#0d1115"/>
-          <ellipse cx="31" cy="258" rx="8" ry="12" fill="#0d1115"/>
-          <rect x="350" y="258" width="3" height="18" fill="#0d1115"/>
-          <ellipse cx="351" cy="254" rx="9" ry="13" fill="#0d1115"/>
-        </svg>
-      </div>
+      {/* Overlay */}
+<div style={{
+  position: 'absolute',
+  inset: 0,
+  background: 'linear-gradient(to bottom, rgba(10,12,15,0.2) 0%, rgba(10,12,15,0.6) 35%, rgba(10,12,15,0.6) 65%, rgba(10,12,15,0.2) 100%)',
+  zIndex: 1,
+}} />
 
       {/* Contenido */}
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px' }}>
 
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '52px', fontWeight: '700', color: '#c8b89a', letterSpacing: '8px', margin: '0 0 4px 0' }}>
+        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '52px', fontWeight: '700', color: '#c8b89a', textShadow: '0 2px 20px rgba(0,0,0,0.6)', letterSpacing: '8px', margin: '0 0 4px 0' }}>
           LAVIANA
         </h1>
 
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', margin: '0 0 6px 0' }}>
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a60',
+textShadow: '0 1px 8px rgba(0,0,0,0.8)', color: '#6a5a45', letterSpacing: '3px', margin: '0 0 6px 0' }}>
           ALGO CAMINA EN LA NOCHE
         </p>
 
@@ -149,6 +132,24 @@ export default function Home() {
           >
             Unirse a sala
           </button>
+
+          <button
+  onClick={onBack}
+  style={{
+    background: 'transparent',
+    border: 'none',
+    color: '#8a7a60',
+textShadow: '0 1px 6px rgba(0,0,0,0.9)',
+    fontFamily: 'Georgia, serif',
+    fontSize: '12px',
+    letterSpacing: '2px',
+    cursor: 'pointer',
+    marginBottom: '24px',
+    padding: 0,
+  }}
+>
+  ← VOLVER
+</button>
 
           {error && (
             <p style={{ color: '#a05040', fontSize: '13px', textAlign: 'center', fontFamily: 'Georgia, serif', margin: '4px 0 0' }}>

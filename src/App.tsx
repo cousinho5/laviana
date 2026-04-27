@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import { useGameStore } from './store/gameStore'
+import Landing from './pages/Landing'
 import Home from './pages/Home'
+import Historia from './pages/Historia'
+import Roles from './pages/Roles'
 import Lobby from './pages/Lobby'
 import MayorVote from './pages/MayorVote'
 import MayorReplace from './pages/MayorReplace'
@@ -11,22 +15,29 @@ import Finished from './pages/Finished'
 import Hunter from './pages/Hunter'
 import Intro from './pages/Intro'
 
+export type AppPage = 'landing' | 'home' | 'historia' | 'roles'
+
 function App() {
   const { room, players, currentPlayer } = useGameStore()
+  const [page, setPage] = useState<AppPage>('landing')
 
-  if (!room) return <Home />
+  if (!room) {
+    if (page === 'landing') return <Landing onNavigate={setPage} />
+    if (page === 'historia') return <Historia onBack={() => setPage('landing')} />
+    if (page === 'roles') return <Roles onBack={() => setPage('landing')} />
+    return <Home onBack={() => setPage('landing')} />
+  }
+
   if (room.phase === 'finished') return <Finished />
   if (room.phase === 'intro') return <Intro />
+  if (room.phase === 'hunter') return <Hunter />
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const isDead = myPlayer && !myPlayer.is_alive
 
-  if (room.phase === 'hunter') return <Hunter />
-
   if (room.phase === 'mayor_replace') {
-  const iAmAlreadyDead = myPlayer && !myPlayer.is_alive
-  return iAmAlreadyDead ? <Dead /> : <MayorReplace />
-}
+    return isDead ? <Dead /> : <MayorReplace />
+  }
 
   if (isDead) return <Dead />
 
