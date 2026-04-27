@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 
-const roleInfo: Record<string, { label: string; description: string; color: string }> = {
-  lobo: { label: 'Torok', description: 'Cada noche cazas a un lavianes. Durante el día finges ser uno de ellos.', color: '#c04040' },
-  alpha: { label: 'Torok Alpha', description: 'Eres el primero de tu especie. Una vez por partida puedes infectar a tu víctima en vez de matarla, propagando la maldición.', color: '#d04040' },
-  vidente: { label: 'Vieya Cotilla', description: 'Cada noche descubres la verdadera naturaleza de un jugador. Úsalo con cuidado, o los Toroks irán a por ti.', color: '#9080c0' },
-  protector: { label: 'Protector', description: 'Cada noche proteges a alguien de los Toroks. No puedes proteger a la misma persona dos noches seguidas.', color: '#5080a0' },
-  cazador: { label: 'Cazaor', description: 'Si mueres, antes de caer eres capaz de llevarte a alguien contigo.', color: '#a08030' },
-  laviano: { label: 'Lavianes', description: 'Eres un aldeano sin poderes especiales. Tu única arma es la deducción y el voto. No la desperdicies.', color: '#8a7a65' },
+const roleInfo: Record<string, { label: string; description: string; color: string; imagen: string }> = {
+  lobo: { label: 'Torok', description: 'Cada noche cazas a un lavianes. Durante el día finges ser uno de ellos.', color: '#c04040', imagen: '/assets/roles/TOROK.png' },
+  alpha: { label: 'Torok Alpha', description: 'Eres el primero de tu especie. Una vez por partida puedes infectar a tu víctima en vez de matarla, propagando la maldición.', color: '#d04040', imagen: '/assets/roles/TOROK_ALPHA.png' },
+  vidente: { label: 'Vieya Cotilla', description: 'Cada noche descubres la verdadera naturaleza de un jugador. Úsalo con cuidado, o los Toroks irán a por ti.', color: '#9080c0', imagen: '/assets/roles/VIEYA_COTILLA.png' },
+  protector: { label: 'Protector', description: 'Cada noche proteges a alguien de los Toroks. No puedes proteger a la misma persona dos noches seguidas.', color: '#5080a0', imagen: '/assets/roles/PROTECTOR.png' },
+  cazador: { label: 'Cazaor', description: 'Si mueres, antes de caer eres capaz de llevarte a alguien contigo.', color: '#a08030', imagen: '/assets/roles/CAZAOR.png' },
+  laviano: { label: 'Lavianes', description: 'Eres un aldeano sin poderes especiales. Tu única arma es la deducción y el voto. No la desperdicies.', color: '#8a7a65', imagen: '/assets/roles/LAVIANES.png' },
 }
 
 export default function RoleReveal() {
@@ -50,14 +50,14 @@ export default function RoleReveal() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
 
-      {/* Alcalde */}
+      {/* Edil */}
       {room.config?.has_mayor !== false && (
-  <div style={{ width: '100%', maxWidth: '340px', background: 'rgba(13,16,21,0.9)', border: '1px solid #3a3020', borderRadius: '4px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
-    <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>EDIL DE LAVIANA</p>
-    <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8a840' }}>{mayor?.name ?? '...'}</p>
-    {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — como Edil, tu voto cuenta doble</p>}
-  </div>
-)}
+        <div style={{ width: '100%', maxWidth: '340px', background: 'rgba(13,16,21,0.9)', border: '1px solid #3a3020', borderRadius: '4px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>EDIL DE LAVIANA</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8a840' }}>{mayor?.name ?? '...'}</p>
+          {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — como Edil, tu voto cuenta doble</p>}
+        </div>
+      )}
 
       {!revealed ? (
         <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>
@@ -74,18 +74,56 @@ export default function RoleReveal() {
       ) : (
         <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-          {/* Rol */}
-          <div style={{ background: 'rgba(13,16,21,0.9)', border: `1px solid ${info?.color ?? '#2a2520'}`, borderRadius: '4px', padding: '24px', textAlign: 'center' }}>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }}>TU ROL</p>
-            <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: info?.color ?? '#c8b89a', marginBottom: '12px' }}>
-              {info?.label ?? myRole}
-            </h3>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8a7a65', lineHeight: '1.7' }}>
-              {info?.description}
-            </p>
+          {/* Tarjeta del rol con imagen de fondo */}
+          <div style={{
+            position: 'relative',
+            border: `1px solid ${info?.color ?? '#2a2520'}`,
+            borderRadius: '4px',
+            overflow: 'hidden',
+            minHeight: '280px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+          }}>
+            {/* Imagen de fondo */}
+            {info?.imagen && (
+              <img
+                src={info.imagen}
+                alt={info.label}
+                style={{
+  position: 'absolute',
+  bottom: 0,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  height: '100%',
+  width: 'auto',
+  objectFit: 'contain',
+  objectPosition: 'bottom center',
+  opacity: 0.35,
+}}
+              />
+            )}
+
+            {/* Gradiente para legibilidad */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to bottom, rgba(10,12,15,0.3) 0%, rgba(10,12,15,0.95) 70%)',
+            }} />
+
+            {/* Texto encima */}
+            <div style={{ position: 'relative', zIndex: 2, padding: '24px', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }}>TU ROL</p>
+              <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '32px', fontWeight: '700', color: info?.color ?? '#c8b89a', marginBottom: '12px' }}>
+                {info?.label ?? myRole}
+              </h3>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#8a7a65', lineHeight: '1.7' }}>
+                {info?.description}
+              </p>
+            </div>
           </div>
 
-          {/* Compañeros lobos */}
+          {/* Compañeros Toroks */}
           {isWolf && wolves.length > 1 && (
             <div style={{ background: 'rgba(13,8,8,0.95)', border: '1px solid #4a2020', borderRadius: '4px', padding: '16px' }}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a4040', letterSpacing: '3px', marginBottom: '10px' }}>TUS HERMANOS DE MALDICIÓN</p>
@@ -96,10 +134,10 @@ export default function RoleReveal() {
             </div>
           )}
 
-          {/* Alcalde */}
+          {/* Edil */}
           {isMayor && (
             <div style={{ background: 'rgba(13,12,8,0.95)', border: '1px solid #4a3820', borderRadius: '4px', padding: '16px' }}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', letterSpacing: '3px', marginBottom: '8px' }}>ALCALDE</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', letterSpacing: '3px', marginBottom: '8px' }}>EDIL</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#a08040', lineHeight: '1.6' }}>
                 Como Edil de Laviana, tu voz pesa el doble en las ejecuciones. Si caes, el pueblo deberá elegir a quien te suceda.
               </p>

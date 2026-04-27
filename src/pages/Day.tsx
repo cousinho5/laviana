@@ -6,7 +6,7 @@ export default function Day() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
   const [hasVoted, setHasVoted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [seerResult, setSeerResult] = useState<{ name: string; role: string } | null>(null)
+  const [seerResult, setSeerResult] = useState<{ name: string; role: string; infected: boolean } | null>(null)
   const [dayVotes, setDayVotes] = useState<any[]>([])
   const [pendingVoteId, setPendingVoteId] = useState<string | null>(null)
 
@@ -38,7 +38,7 @@ export default function Day() {
         .then(({ data }) => {
           if (data?.target_id) {
             const target = players.find(p => p.id === data.target_id)
-            if (target) setSeerResult({ name: target.name, role: target.role ?? 'desconocido' })
+            if (target) setSeerResult({ name: target.name, role: target.role ?? 'desconocido', infected: target.infected ?? false })
           }
         })
     }
@@ -149,7 +149,7 @@ export default function Day() {
             <div style={{ ...card, border: '1px solid #3a2860', textAlign: 'left' }}>
               <p style={{ ...label, marginBottom: '8px' }}>TU INVESTIGACIÓN</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8a7ab0' }}>
-                <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.name}</span> es un <span style={{ color: '#c8b89a', fontWeight: '700' }}>{roleLabel[seerResult.role] ?? seerResult.role}</span>
+                <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.name}</span> es un <span style={{ color: '#c8b89a', fontWeight: '700' }}>{roleLabel[seerResult.role] ?? seerResult.role}{seerResult.infected ? ' (Infectado)' : ''}</span>
               </p>
             </div>
           )}
