@@ -216,7 +216,7 @@ export default function Night() {
   return (
     <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }}>NOCHE {room.night}</p>
-      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8b89a', marginBottom: '32px' }}>El pueblo duerme</h2>
+      <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8b89a', marginBottom: '32px' }}>Laviana duerme</h2>
 
       {/* Laviano — pasos para dormir */}
       {isSleeper && !hasActed && (
@@ -243,7 +243,7 @@ export default function Night() {
           )}
 
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30', marginBottom: '12px', letterSpacing: '1px' }}>
-            {infectMode ? 'Elige a quién infectar' : 'Elige a quién devorar'}
+            {infectMode ? '¿A quién corrompe la maldición?' : '¿A quién caza el Torok esta noche?'}
           </p>
 
           {alivePlayers.map(player => {
@@ -264,15 +264,15 @@ export default function Night() {
           })}
 
           <button style={targetId ? (infectMode ? btnRed : btnPrimary) : btnDisabled} onClick={() => confirmKill(false)} disabled={!targetId}>
-            {infectMode ? 'Confirmar infección' : 'Confirmar voto'}
+            {infectMode ? 'Propagar la maldición' : 'Confirmar caza'}
           </button>
-          <button style={btnSecondary} onClick={() => confirmKill(true)}>Pasar turno</button>
+          <button style={btnSecondary} onClick={() => confirmKill(true)}>Esta noche no cazo</button>
 
           {aliveWolves.length > 1 && (
             <div style={{ background: 'rgba(13,8,8,0.95)', border: '1px solid #3a1818', borderRadius: '4px', padding: '16px', marginTop: '12px' }}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a4040', letterSpacing: '3px', marginBottom: '10px' }}>ESTADO DE LOS LOBOS</p>
               {nightActions.filter(a => a.action_type === 'kill' || a.action_type === 'infect').length === 0
-                ? <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#3a2020' }}>Ningún lobo ha seleccionado aún</p>
+                ? <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#3a2020' }}>Ningún Torok ha elegido aún</p>
                 : nightActions.filter(a => a.action_type === 'kill' || a.action_type === 'infect').map(action => {
                     const voter = players.find(p => p.id === action.player_id)
                     const target = players.find(p => p.id === action.target_id)
@@ -298,7 +298,7 @@ export default function Night() {
       {infectedKillDone && !hasActed && (
         <div style={{ width: '100%', maxWidth: '340px' }}>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30', marginBottom: '12px', letterSpacing: '1px' }}>
-            {isSeer ? 'Ahora investiga a alguien' : 'Ahora elige a quién proteger'}
+            {isSeer ? 'Como buena Vieya Cotilla puedes cotillear a alguien.' : 'El Protector aún vive en ti. Protege a alguien.'}
           </p>
           {alivePlayers.map(player => {
             const isLastProtected = isProtector && myPlayer?.last_protected === player.id
@@ -312,7 +312,7 @@ export default function Night() {
           <button style={targetId ? btnPrimary : btnDisabled} onClick={() => confirmRoleAction(false)} disabled={!targetId}>
             {isSeer ? 'Investigar' : 'Proteger'}
           </button>
-          <button style={btnSecondary} onClick={() => confirmRoleAction(true)}>Pasar turno</button>
+          <button style={btnSecondary} onClick={() => confirmRoleAction(true)}>Esta noche no cazo</button>
         </div>
       )}
 
@@ -340,7 +340,7 @@ export default function Night() {
 
       {hasActed && (
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', letterSpacing: '1px', marginTop: '16px' }}>
-          Acción registrada. Esperando al amanecer...
+          Hecho. En Laviana amanecerá pronto...
         </p>
       )}
     </div>

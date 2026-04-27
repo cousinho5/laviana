@@ -117,7 +117,7 @@ export default function Lobby() {
       <p style={s.subtitle}>Comparte este código con los jugadores</p>
 
       <div style={s.section}>
-        <p style={s.sectionLabel}>JUGADORES ({playerCount})</p>
+        <p style={s.sectionLabel}>LAVIANENSES ({playerCount})</p>
 
         {players.map((player) => (
           <div key={player.id} style={s.playerCard}>
@@ -201,7 +201,7 @@ export default function Lobby() {
         )}
 
         {!isHost && (
-          <p style={s.waiting}>Esperando al host...</p>
+          <p style={s.waiting}>Esperando al anfitrión...</p>
         )}
       </div>
     </div>

@@ -134,7 +134,7 @@ export default function Day() {
             </div>
           ) : (
             <div style={card}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>Nadie ha muerto esta noche.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>Laviana amanece en calma. Por ahora.</p>
             </div>
           )}
 
@@ -183,8 +183,8 @@ export default function Day() {
       {dayPhase === 'debate' && (
         <div style={{ width: '100%', maxWidth: '340px' }}>
           <p style={{ ...label, textAlign: 'center' }}>DÍA {currentDay} — DEBATE</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8b89a', textAlign: 'center', marginBottom: '6px' }}>Discutid entre vosotros</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', textAlign: 'center', marginBottom: '24px' }}>Sin chat — todo es presencial</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8b89a', textAlign: 'center', marginBottom: '6px' }}>¿Quién miente en Laviana?</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', textAlign: 'center', marginBottom: '24px' }}>Mirad a los ojos. Alguien esconde la verdad.</p>
 
           <div style={{ ...card, textAlign: 'left', marginBottom: '16px' }}>
             <p style={{ ...label, marginBottom: '12px' }}>VIVOS ({alivePlayers.length})</p>
@@ -209,7 +209,7 @@ export default function Day() {
       {dayPhase === 'vote' && (
         <div style={{ width: '100%', maxWidth: '340px' }}>
           <p style={{ ...label, textAlign: 'center', marginBottom: '16px' }}>DÍA {currentDay} — VOTACIÓN</p>
-          {!isAlive && <p style={{ ...waiting, marginBottom: '12px' }}>Estás muerto — solo puedes observar</p>}
+          {!isAlive && <p style={{ ...waiting, marginBottom: '12px' }}>Estás muerto. Solo puedes observar.</p>}
 
           {alivePlayers.map(player => {
             const confirmedVoteCount = voteCountByTarget[player.id] || 0
@@ -245,7 +245,7 @@ export default function Day() {
             </div>
           )}
 
-          {hasVoted && <p style={{ ...waiting, marginTop: '12px' }}>Esperando votos... ({confirmedVotes.length}/{alivePlayers.length})</p>}
+          {hasVoted && <p style={{ ...waiting, marginTop: '12px' }}>Laviana está votando... ({confirmedVotes.length}/{alivePlayers.length})</p>}
         </div>
       )}
 

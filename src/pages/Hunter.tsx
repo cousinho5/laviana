@@ -63,13 +63,13 @@ await supabase.from('rooms').update({
         {hunterPlayer?.name} apunta...
       </h2>
       <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', marginBottom: '32px', textAlign: 'center', letterSpacing: '1px' }}>
-        El cazador cae, pero no sin antes disparar.
+        El Cazaor cae, pero no sin antes cobrar su última pieza.
       </p>
 
       {isHunter ? (
         <div style={{ width: '100%', maxWidth: '340px' }}>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30', marginBottom: '12px', letterSpacing: '1px' }}>
-            Elige a quién disparas antes de morir
+            Antes de caer, llévate a alguien contigo.
           </p>
 
           {alivePlayers.map(player => (
@@ -88,12 +88,12 @@ await supabase.from('rooms').update({
             onClick={skipShot}
             style={{ width: '100%', background: 'transparent', border: 'none', padding: '12px 16px', color: '#4a3f30', fontFamily: 'Georgia, serif', fontSize: '13px', cursor: 'pointer', marginTop: '8px' }}
           >
-            No disparar a nadie
+            Morir sin cobrar pieza
           </button>
         </div>
       ) : (
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', letterSpacing: '1px' }}>
-          Esperando a que el cazador decida...
+          El Cazaor apunta...
         </p>
       )}
     </div>

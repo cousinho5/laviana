@@ -36,14 +36,14 @@ export default function Finished() {
         {winner === 'lobos' ? (
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
             <p style={{ ...label, color: '#8a4040' }}>VICTORIA</p>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#c04040', marginBottom: '8px' }}>Los lobos ganan</h1>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3030', letterSpacing: '1px' }}>Laviana ha caído en la oscuridad.</p>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#c04040', marginBottom: '8px' }}>Los Toroks ganan</h1>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3030', letterSpacing: '1px' }}>La maldición de Zapico ha consumido Laviana.</p>
           </div>
         ) : (
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
             <p style={{ ...label, color: '#4a7040' }}>VICTORIA</p>
-            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#6a9a50', marginBottom: '8px' }}>El pueblo gana</h1>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#3a4a30', letterSpacing: '1px' }}>Laviana ha sobrevivido a la maldición.</p>
+            <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '38px', fontWeight: '700', color: '#6a9a50', marginBottom: '8px' }}>Laviana sobrevive</h1>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#3a4a30', letterSpacing: '1px' }}>Los Toroks han sido descubiertos. La maldición, contenida.</p>
           </div>
         )}
 

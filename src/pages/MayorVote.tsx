@@ -81,7 +81,7 @@ export default function MayorVote() {
         ¿Quién será el Edil de Laviana?
       </h2>
       <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', marginBottom: '32px', textAlign: 'center' }}>
-        Nadie conoce aún su rol. Vota con instinto.
+        Nadie conoce aún su destino. Vota con el instinto.
       </p>
 
       <div style={{ width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>

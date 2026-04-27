@@ -103,7 +103,7 @@ export default function Home() {
         </h1>
 
         <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', margin: '0 0 6px 0' }}>
-          EL PUEBLO TIENE UN SECRETO
+          ALGO CAMINA EN LA NOCHE
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '40px', width: '100%', justifyContent: 'center' }}>
@@ -115,7 +115,7 @@ export default function Home() {
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <input
             style={{ background: 'rgba(13,16,21,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '13px 16px', color: '#c8b89a', fontFamily: 'Georgia, serif', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
-            placeholder="Tu nombre en el pueblo..."
+            placeholder="Tu nombre en Laviana..."
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

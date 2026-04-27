@@ -62,13 +62,13 @@ export default function RoleReveal() {
       {!revealed ? (
         <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', marginBottom: '24px', letterSpacing: '1px' }}>
-            Asegúrate de que nadie ve tu pantalla
+            Asegúrate de que nadie más ve esto
           </p>
           <button
             onClick={() => setRevealed(true)}
             style={{ width: '100%', background: 'rgba(42,34,24,0.9)', border: '1px solid #5a4830', borderRadius: '4px', padding: '13px 16px', color: '#c8b89a', fontFamily: 'Georgia, serif', fontSize: '14px', cursor: 'pointer' }}
           >
-            Ver mi rol
+            Descubrir mi destino
           </button>
         </div>
       ) : (
@@ -88,11 +88,11 @@ export default function RoleReveal() {
           {/* Compañeros lobos */}
           {isWolf && wolves.length > 1 && (
             <div style={{ background: 'rgba(13,8,8,0.95)', border: '1px solid #4a2020', borderRadius: '4px', padding: '16px' }}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a4040', letterSpacing: '3px', marginBottom: '10px' }}>TUS COMPAÑEROS</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a4040', letterSpacing: '3px', marginBottom: '10px' }}>TUS HERMANOS DE MALDICIÓN</p>
               {wolves.filter(w => w.id !== currentPlayer.id).map(w => (
                 <p key={w.id} style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c08080', marginBottom: '4px' }}>{w.name}</p>
               ))}
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a2020', marginTop: '8px', letterSpacing: '1px' }}>Solo tú ves esto</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a2020', marginTop: '8px', letterSpacing: '1px' }}>Solo tú conoces la verdad</p>
             </div>
           )}
 
@@ -101,7 +101,7 @@ export default function RoleReveal() {
             <div style={{ background: 'rgba(13,12,8,0.95)', border: '1px solid #4a3820', borderRadius: '4px', padding: '16px' }}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', letterSpacing: '3px', marginBottom: '8px' }}>ALCALDE</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#a08040', lineHeight: '1.6' }}>
-                Tu voto cuenta doble en las ejecuciones. Si mueres, el pueblo elige a tu sustituto.
+                Como Edil de Laviana, tu voz pesa el doble en las ejecuciones. Si caes, el pueblo deberá elegir a quien te suceda.
               </p>
             </div>
           )}
@@ -111,7 +111,7 @@ export default function RoleReveal() {
               onClick={startNight}
               style={{ width: '100%', background: 'rgba(20,20,20,0.9)', border: '1px solid #2a2520', borderRadius: '4px', padding: '13px 16px', color: '#7a6a55', fontFamily: 'Georgia, serif', fontSize: '13px', cursor: 'pointer', marginTop: '4px' }}
             >
-              Comenzar primera noche
+              Que caiga la noche
             </button>
           )}
         </div>
