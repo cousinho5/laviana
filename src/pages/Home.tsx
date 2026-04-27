@@ -64,18 +64,28 @@ export default function Home({ onBack }: Props) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0c0f',
-backgroundImage: 'url(/assets/fondo_inicio.png)',
-backgroundSize: 'cover',
-backgroundPosition: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden', backgroundImage: 'url(/assets/fondo_inicio.png)', backgroundSize: 'cover', backgroundPosition: 'center',}}>
+    <div style={{
+      minHeight: '100vh',
+      background: '#0a0c0f',
+      backgroundImage: 'url(/assets/fondo_inicio.png)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
 
       {/* Overlay */}
-<div style={{
-  position: 'absolute',
-  inset: 0,
-  background: 'linear-gradient(to bottom, rgba(10,12,15,0.2) 0%, rgba(10,12,15,0.6) 35%, rgba(10,12,15,0.6) 65%, rgba(10,12,15,0.2) 100%)',
-  zIndex: 1,
-}} />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(to bottom, rgba(10,12,15,0.2) 0%, rgba(10,12,15,0.6) 35%, rgba(10,12,15,0.6) 65%, rgba(10,12,15,0.2) 100%)',
+        zIndex: 1,
+      }} />
 
       {/* Contenido */}
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '340px' }}>
@@ -84,8 +94,7 @@ backgroundPosition: 'center', display: 'flex', flexDirection: 'column', alignIte
           LAVIANA
         </h1>
 
-        <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a60',
-textShadow: '0 1px 8px rgba(0,0,0,0.8)', color: '#6a5a45', letterSpacing: '3px', margin: '0 0 6px 0' }}>
+        <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7a60', textShadow: '0 1px 8px rgba(0,0,0,0.8)', letterSpacing: '3px', margin: '0 0 6px 0' }}>
           ALGO CAMINA EN LA NOCHE
         </p>
 
@@ -134,22 +143,22 @@ textShadow: '0 1px 8px rgba(0,0,0,0.8)', color: '#6a5a45', letterSpacing: '3px',
           </button>
 
           <button
-  onClick={onBack}
-  style={{
-    background: 'transparent',
-    border: 'none',
-    color: '#8a7a60',
-textShadow: '0 1px 6px rgba(0,0,0,0.9)',
-    fontFamily: 'Georgia, serif',
-    fontSize: '12px',
-    letterSpacing: '2px',
-    cursor: 'pointer',
-    marginBottom: '24px',
-    padding: 0,
-  }}
->
-  ← VOLVER
-</button>
+            onClick={onBack}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#8a7a60',
+              textShadow: '0 1px 6px rgba(0,0,0,0.9)',
+              fontFamily: 'Georgia, serif',
+              fontSize: '12px',
+              letterSpacing: '2px',
+              cursor: 'pointer',
+              marginTop: '4px',
+              padding: 0,
+            }}
+          >
+            ← VOLVER
+          </button>
 
           {error && (
             <p style={{ color: '#a05040', fontSize: '13px', textAlign: 'center', fontFamily: 'Georgia, serif', margin: '4px 0 0' }}>
