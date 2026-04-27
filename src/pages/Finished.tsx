@@ -1,13 +1,13 @@
 import { useGameStore } from '../store/gameStore'
 
 const roleLabels: Record<string, string> = {
-  lobo: 'Hombre lobo',
-  alpha: 'Alpha',
-  vidente: 'Vidente',
+  lobo: 'Torok',
+  alpha: 'Torok Alpha',
+  vidente: 'Vieya Cotilla',
   protector: 'Protector',
-  cazador: 'Cazador',
-  laviano: 'Laviano',
-  lobo_infectado: 'Infectado',
+  cazador: 'Cazaor',
+  laviano: 'Lavianes',
+  lobo_infectado: 'Torok Infectado',
 }
 
 export default function Finished() {

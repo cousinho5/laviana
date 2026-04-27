@@ -75,10 +75,10 @@ export default function MayorVote() {
     <div style={{ minHeight: '100vh', background: '#0a0c0f', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
 
       <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '8px' }}>
-        ELECCIÓN DEL ALCALDE
+        ELECCIÓN DEL EDIL
       </p>
       <h2 style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8b89a', marginBottom: '8px' }}>
-        ¿Quién liderará el pueblo?
+        ¿Quién será el Edil de Laviana?
       </h2>
       <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3f30', marginBottom: '32px', textAlign: 'center' }}>
         Nadie conoce aún su rol. Vota con instinto.

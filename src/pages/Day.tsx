@@ -20,6 +20,15 @@ export default function Day() {
   const revealRole = room?.config?.reveal_role ?? true
   const currentDay = room ? room.night - 1 : 1
 
+  const roleLabel: Record<string, string> = {
+    lobo: 'Torok',
+    alpha: 'Torok Alpha',
+    vidente: 'Vieya Cotilla',
+    protector: 'Protector',
+    cazador: 'Cazaor',
+    laviano: 'Lavianes',
+  }
+
   useEffect(() => {
     if (!room) return
     supabase.from('players').select().eq('room_id', room.id).then(({ data }) => { if (data) setPlayers(data) })
@@ -90,9 +99,9 @@ export default function Day() {
 
       {dayPhase === 'new_mayor' && (
         <div style={{ width: '100%', maxWidth: '340px', textAlign: 'center' }}>
-          <p style={label}>NUEVO ALCALDE</p>
+          <p style={label}>NUEVO EDIL</p>
           <div style={{ ...card, border: '1px solid #3a3020' }}>
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a5a45', marginBottom: '8px' }}>El pueblo ha elegido como nuevo Alcalde a</p>
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a5a45', marginBottom: '8px' }}>Laviana ha elegido como nuevo Edil a</p>
             <p style={{ fontFamily: 'Georgia, serif', fontSize: '26px', fontWeight: '700', color: '#c8a840' }}>{players.find(p => p.id === room.mayor_id)?.name}</p>
           </div>
           {currentPlayer.is_host
@@ -107,21 +116,21 @@ export default function Day() {
 
           {room.last_victim_infected && myPlayer?.infected && (
             <div style={{ ...card, border: '1px solid #4a2020', marginBottom: '12px' }}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '18px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>Has sido infectado</p>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a4040' }}>Los lobos te han convertido en uno de los suyos.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '18px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>Has sido convertido</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#6a4040' }}>La maldición del Torok Alpha te ha alcanzado. Ya no eres el mismo.</p>
             </div>
           )}
 
           {room.last_victim_saved ? (
             <div style={card}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a9a50', marginBottom: '6px' }}>Nadie ha muerto esta noche</p>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a5a40' }}>El protector salvó a alguien.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a5a40' }}>El Protector salvó a alguien de las garras de los Toroks.</p>
             </div>
           ) : lastVictim ? (
             <div style={card}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Esta mañana encontraron el cuerpo de</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>{lastVictim.name}</p>
-              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {lastVictim.role}</p>}
+              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {roleLabel[lastVictim.role ?? ''] ?? lastVictim.role}</p>}
             </div>
           ) : (
             <div style={card}>
@@ -131,7 +140,7 @@ export default function Day() {
 
           {room.hunter_target_id && (
             <div style={card}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de morir, el cazador disparó a</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de caer, el Cazaor se llevó a</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c08030' }}>{players.find(p => p.id === room.hunter_target_id)?.name}</p>
             </div>
           )}
@@ -140,7 +149,7 @@ export default function Day() {
             <div style={{ ...card, border: '1px solid #3a2860', textAlign: 'left' }}>
               <p style={{ ...label, marginBottom: '8px' }}>TU INVESTIGACIÓN</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#8a7ab0' }}>
-                <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.name}</span> es un <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.role}</span>
+                <span style={{ color: '#c8b89a', fontWeight: '700' }}>{seerResult.name}</span> es un <span style={{ color: '#c8b89a', fontWeight: '700' }}>{roleLabel[seerResult.role] ?? seerResult.role}</span>
               </p>
             </div>
           )}
@@ -150,7 +159,7 @@ export default function Day() {
             {alivePlayers.map(p => (
               <p key={p.id} style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a', padding: '4px 0' }}>
                 {p.name}
-                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
+                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Edil</span>}
               </p>
             ))}
           </div>
@@ -165,7 +174,7 @@ export default function Day() {
                 await supabase.from('rooms').update({ day_phase: 'debate', hunter_target_id: null }).eq('id', room.id)
               }
             }}>
-              {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Alcalde' : 'Comenzar debate'}
+              {!alivePlayers.find(p => p.id === room.mayor_id) ? 'Elegir nuevo Edil' : 'Comenzar debate'}
             </button>
           ) : <p style={waiting}>Esperando al host...</p>}
         </div>
@@ -182,7 +191,7 @@ export default function Day() {
             {alivePlayers.map(p => (
               <p key={p.id} style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a', padding: '4px 0' }}>
                 {p.name}
-                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
+                {p.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Edil</span>}
               </p>
             ))}
           </div>
@@ -216,7 +225,7 @@ export default function Day() {
                 style={{ width: '100%', borderRadius: '4px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', cursor: isMe || hasVoted || !isAlive ? 'not-allowed' : 'pointer', background: isSelected ? 'rgba(42,34,24,0.95)' : 'rgba(13,16,21,0.9)', border: isSelected ? '1px solid #8a6840' : '1px solid #2a2520', opacity: isMe ? 0.4 : 1 }}>
                 <span style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8b89a' }}>
                   {player.name}
-                  {player.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Alcalde</span>}
+                  {player.id === room.mayor_id && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginLeft: '8px' }}>Edil</span>}
                   {isMe && <span style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3f30', marginLeft: '8px' }}>(tú)</span>}
                 </span>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -246,27 +255,27 @@ export default function Day() {
 
           {executedPlayer ? (
             <div style={card}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>El pueblo ha ejecutado a</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Laviana ha ejecutado a</p>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: '700', color: '#c04040', marginBottom: '6px' }}>{executedPlayer.name}</p>
               {revealRole && (
-  <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>
-    Era un {executedPlayer.role}{executedPlayer.infected ? ' (infectado)' : ''}
-  </p>
-)}
+                <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>
+                  Era un {roleLabel[executedPlayer.role ?? ''] ?? executedPlayer.role}{executedPlayer.infected ? ' (Torok Infectado)' : ''}
+                </p>
+              )}
             </div>
           ) : (
             <div style={card}>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>El pueblo no ha ejecutado a nadie hoy.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a5a45' }}>Laviana no ha ejecutado a nadie hoy.</p>
             </div>
           )}
 
           {room.hunter_target_id && (
-  <div style={card}>
-    <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de morir, el cazador disparó a</p>
-    <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c08030', marginBottom: '6px' }}>{players.find(p => p.id === room.hunter_target_id)?.name}</p>
-    {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {players.find(p => p.id === room.hunter_target_id)?.role}</p>}
-  </div>
-)}
+            <div style={card}>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#6a5a45', letterSpacing: '1px', marginBottom: '8px' }}>Antes de caer, el Cazaor se llevó a</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c08030', marginBottom: '6px' }}>{players.find(p => p.id === room.hunter_target_id)?.name}</p>
+              {revealRole && <p style={{ fontFamily: 'Georgia, serif', fontSize: '12px', color: '#4a3f30' }}>Era un {roleLabel[players.find(p => p.id === room.hunter_target_id)?.role ?? ''] ?? players.find(p => p.id === room.hunter_target_id)?.role}</p>}
+            </div>
+          )}
 
           {currentPlayer.is_host ? (
             <button style={btnHost} onClick={async () => {
@@ -279,7 +288,7 @@ export default function Day() {
                 await supabase.from('rooms').update({ phase: 'night', day_phase: 'dawn', hunter_target_id: null }).eq('id', room.id)
               }
             }}>
-              {room.last_executed_id === room.mayor_id || room.hunter_target_id === room.mayor_id ? 'Elegir nuevo Alcalde' : 'Comenzar siguiente noche'}
+              {room.last_executed_id === room.mayor_id || room.hunter_target_id === room.mayor_id ? 'Elegir nuevo Edil' : 'Comenzar siguiente noche'}
             </button>
           ) : <p style={waiting}>Esperando al host...</p>}
         </div>

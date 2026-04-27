@@ -3,12 +3,12 @@ import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
 
 const roleInfo: Record<string, { label: string; description: string; color: string }> = {
-  lobo: { label: 'Hombre Lobo', description: 'Cada noche devoras a un aldeano. Finge ser uno de ellos durante el día.', color: '#c04040' },
-  alpha: { label: 'Hombre Lobo Alpha', description: 'Eres el lobo especial. Una vez por partida puedes infectar a tu víctima en vez de matarla.', color: '#d04040' },
-  vidente: { label: 'Vidente', description: 'Cada noche descubres el rol de un jugador. Úsalo con cuidado.', color: '#9080c0' },
-  protector: { label: 'Protector', description: 'Cada noche proteges a alguien. No puedes proteger a la misma persona dos noches seguidas.', color: '#5080a0' },
-  cazador: { label: 'Cazador', description: 'Si mueres, en ese momento eliminas a otro jugador de tu elección.', color: '#a08030' },
-  laviano: { label: 'Laviano', description: 'Eres un aldeano sin poderes especiales. Tu arma es la deducción y el voto.', color: '#8a7a65' },
+  lobo: { label: 'Torok', description: 'Cada noche cazas a un lavianes. Durante el día finges ser uno de ellos.', color: '#c04040' },
+  alpha: { label: 'Torok Alpha', description: 'Eres el primero de tu especie. Una vez por partida puedes infectar a tu víctima en vez de matarla, propagando la maldición.', color: '#d04040' },
+  vidente: { label: 'Vieya Cotilla', description: 'Cada noche descubres la verdadera naturaleza de un jugador. Úsalo con cuidado, o los Toroks irán a por ti.', color: '#9080c0' },
+  protector: { label: 'Protector', description: 'Cada noche proteges a alguien de los Toroks. No puedes proteger a la misma persona dos noches seguidas.', color: '#5080a0' },
+  cazador: { label: 'Cazaor', description: 'Si mueres, antes de caer eres capaz de llevarte a alguien contigo.', color: '#a08030' },
+  laviano: { label: 'Lavianes', description: 'Eres un aldeano sin poderes especiales. Tu única arma es la deducción y el voto. No la desperdicies.', color: '#8a7a65' },
 }
 
 export default function RoleReveal() {
@@ -53,9 +53,9 @@ export default function RoleReveal() {
       {/* Alcalde */}
       {room.config?.has_mayor !== false && (
   <div style={{ width: '100%', maxWidth: '340px', background: 'rgba(13,16,21,0.9)', border: '1px solid #3a3020', borderRadius: '4px', padding: '16px', textAlign: 'center', marginBottom: '24px' }}>
-    <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>ALCALDE DEL PUEBLO</p>
+    <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#6a5a45', letterSpacing: '3px', marginBottom: '6px' }}>EDIL DE LAVIANA</p>
     <p style={{ fontFamily: 'Georgia, serif', fontSize: '22px', fontWeight: '700', color: '#c8a840' }}>{mayor?.name ?? '...'}</p>
-    {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — tu voto cuenta doble</p>}
+    {isMayor && <p style={{ fontFamily: 'Georgia, serif', fontSize: '11px', color: '#8a7030', marginTop: '4px', letterSpacing: '1px' }}>Eres tú — como Edil, tu voto cuenta doble</p>}
   </div>
 )}
 

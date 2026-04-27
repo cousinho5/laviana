@@ -142,7 +142,7 @@ export default function Lobby() {
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <p style={s.configLabel}>Lobos normales</p>
+                    <p style={s.configLabel}>Toroks</p>
                     <p style={s.configDesc}>Máximo {maxWolves} para {playerCount} jugadores</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -159,11 +159,11 @@ export default function Lobby() {
                 </div>
 
                 {[
-                  { key: 'has_alpha', label: 'Alpha', desc: 'Lobo especial con infección' },
-                  { key: 'has_seer', label: 'Vidente', desc: 'Ve el rol de un jugador cada noche' },
+                  { key: 'has_alpha', label: 'Torok Alpha', desc: 'Torok especial que puede propagar la maldición' },
+                  { key: 'has_seer', label: 'Vieya Cotilla', desc: 'Descubre el rol de un jugador cada noche' },
                   { key: 'has_protector', label: 'Protector', desc: 'Protege a un jugador cada noche' },
-                  { key: 'has_hunter', label: 'Cazador', desc: 'Al morir elimina a otro jugador' },
-                  { key: 'has_mayor', label: 'Alcalde', desc: 'Un jugador lidera el pueblo con voto doble' },
+                  { key: 'has_hunter', label: 'Cazaor', desc: 'Al morir se lleva a alguien con él' },
+                  { key: 'has_mayor', label: 'Edil', desc: 'Un jugador lidera el pueblo con voto doble' },
                   { key: 'public_votes', label: 'Votos públicos', desc: 'Todos ven a quién vota cada uno' },
                   { key: 'reveal_role', label: 'Revelar rol al morir', desc: 'Se muestra el rol del ejecutado' },
                 ].map(({ key, label, desc }) => (
