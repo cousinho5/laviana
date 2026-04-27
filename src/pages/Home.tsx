@@ -64,7 +64,7 @@ export default function Home({ onBack }: Props) {
   }
 
   return (
-    <div style={{
+    <div className="home-bg" style={{
       minHeight: '100vh',
       background: '#0a0c0f',
       backgroundImage: 'url(/assets/fondo_inicio.png)',
@@ -103,6 +103,17 @@ export default function Home({ onBack }: Props) {
           <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#6a5a45' }}/>
           <div style={{ height: '1px', width: '70px', background: '#2a2520' }}/>
         </div>
+
+        <style>{`
+  .home-bg {
+    background-image: url(/assets/fondo_inicio.png);
+  }
+  @media (max-width: 768px) {
+    .home-bg {
+      background-image: url(/assets/fondo_inicio_movil.png) !important;
+    }
+  }
+`}</style>
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <input

@@ -14,7 +14,7 @@ export default function Landing({ onNavigate }: Props) {
   }, [])
 
   return (
-    <div style={{
+    <div className="landing-bg" style={{
       minHeight: '100vh',
       background: '#0a0c0f',
       display: 'flex',
@@ -70,6 +70,12 @@ export default function Landing({ onNavigate }: Props) {
           transition: opacity 0.2s;
         }
         .btn-landing:hover { opacity: 0.8; }
+        @media (max-width: 768px) {
+        .landing-bg {
+       background-image: url(/assets/fondo_inicio_movil.png) !important;
+  }
+}
+        
       `}</style>
 
       {/* Contenido */}
@@ -92,7 +98,7 @@ export default function Landing({ onNavigate }: Props) {
         }}>
           <h1 style={{
             fontFamily: 'Georgia, serif',
-            fontSize: '64px',
+            fontSize: 'clamp(38px, 12vw, 64px)',
             fontWeight: '700',
             color: '#c8b89a',
             letterSpacing: '12px',
