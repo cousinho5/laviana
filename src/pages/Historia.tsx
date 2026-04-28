@@ -294,15 +294,21 @@ const textoNarracion = `Laviana era un lugar tranquilo. Hasta que algo despertó
 
 export default function Historia({ onBack }: Props) {
   const [narrando, setNarrando] = useState(false)
+const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  function toggleNarracion() {
-    if (narrando) { window.speechSynthesis.cancel(); setNarrando(false); return }
-    const utterance = new SpeechSynthesisUtterance(textoNarracion)
-    utterance.lang = 'es-ES'; utterance.rate = 0.8; utterance.pitch = 0.85
-    utterance.onend = () => setNarrando(false)
-    window.speechSynthesis.speak(utterance)
-    setNarrando(true)
+function toggleNarracion() {
+  if (narrando) {
+    audioRef.current?.pause()
+    if (audioRef.current) audioRef.current.currentTime = 0
+    setNarrando(false)
+    return
   }
+  const audio = new Audio('/assets/historia/historia_narrada.mp3')
+  audioRef.current = audio
+  audio.play()
+  audio.onended = () => setNarrando(false)
+  setNarrando(true)
+}
 
   return (
     <div style={{ background: '#050608', minHeight: '100vh', overflow: 'hidden' }}>
