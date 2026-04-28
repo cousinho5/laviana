@@ -124,7 +124,7 @@ export default function Day() {
           {room.last_victim_saved ? (
             <div style={card}>
               <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#6a9a50', marginBottom: '6px' }}>Nadie ha muerto esta noche</p>
-              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a5a40' }}>El Protector salvó a alguien de las garras de los Toroks.</p>
+              <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a5a40' }}>El Protector salvó a alguien de la caza de los Toroks.</p>
             </div>
           ) : lastVictim ? (
             <div style={card}>
