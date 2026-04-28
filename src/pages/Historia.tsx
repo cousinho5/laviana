@@ -54,96 +54,128 @@ function CapituloItem({ cap, index }: { cap: typeof capitulos[0]; index: number 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setVisible(true) },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
 
+  // Capítulo CON imagen — texto encima de la imagen
+  if (cap.imagen) {
+    return (
+      <div
+        ref={ref}
+        style={{
+          position: 'relative',
+          width: '100vw',
+          marginLeft: '-24px',
+          opacity: visible ? 1 : 0,
+          transform: visible ? 'translateY(0)' : 'translateY(30px)',
+          transition: 'opacity 0.8s ease, transform 0.8s ease',
+        }}
+      >
+        {/* Imagen a ancho completo */}
+        <img
+          src={cap.imagen}
+          alt={cap.titulo}
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+          }}
+        />
+
+        {/* Gradiente encima — oscuro arriba y abajo para el texto */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to bottom, rgba(10,12,15,0.85) 0%, rgba(10,12,15,0.3) 40%, rgba(10,12,15,0.3) 60%, rgba(10,12,15,0.95) 100%)',
+        }} />
+
+        {/* Texto encima */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '28px 24px',
+        }}>
+          {/* Título arriba */}
+          <div>
+            <p style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: '10px',
+              color: '#6a5a45',
+              letterSpacing: '4px',
+              marginBottom: '6px',
+            }}>
+              {String(index + 1).padStart(2, '0')}
+            </p>
+            <h2 style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: '22px',
+              fontWeight: '700',
+              color: '#c8b89a',
+              margin: 0,
+              textShadow: '0 2px 12px rgba(0,0,0,0.8)',
+            }}>
+              {cap.titulo}
+            </h2>
+          </div>
+
+          {/* Texto abajo */}
+          <p style={{
+            fontFamily: 'Georgia, serif',
+            fontSize: '13px',
+            color: '#c8b89a',
+            lineHeight: '1.8',
+            margin: 0,
+            textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+          }}>
+            {cap.texto}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Capítulo SIN imagen — solo texto con padding lateral
   return (
     <div
       ref={ref}
       style={{
+        padding: '0 24px',
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(24px)',
-        transition: `opacity 0.7s ease ${index * 0.05}s, transform 0.7s ease ${index * 0.05}s`,
+        transition: 'opacity 0.7s ease, transform 0.7s ease',
       }}
     >
-      {/* Número de capítulo */}
       <p style={{
         fontFamily: 'Georgia, serif',
         fontSize: '10px',
         color: '#4a3a28',
         letterSpacing: '4px',
         marginBottom: '6px',
-        textAlign: 'center',
       }}>
         {String(index + 1).padStart(2, '0')}
       </p>
-
-      {/* Título */}
       <h2 style={{
         fontFamily: 'Georgia, serif',
         fontSize: '20px',
         fontWeight: '700',
         color: '#c8b89a',
-        textAlign: 'center',
-        marginBottom: '16px',
+        marginBottom: '12px',
         letterSpacing: '1px',
       }}>
         {cap.titulo}
       </h2>
-
-      {/* Imagen si la tiene — antes del texto */}
-      {cap.imagen && (
-        <div style={{
-          marginBottom: '20px',
-          position: 'relative',
-        }}>
-          {/* Marco exterior */}
-          <div style={{
-            border: '1px solid #3a3020',
-            borderRadius: '2px',
-            padding: '6px',
-            background: '#0d0f12',
-          }}>
-            {/* Marco interior */}
-            <div style={{
-              border: '1px solid #2a2018',
-              borderRadius: '1px',
-              overflow: 'hidden',
-              position: 'relative',
-            }}>
-              <img
-                src={cap.imagen}
-                alt={cap.titulo}
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  display: 'block',
-                  filter: 'brightness(0.9) contrast(1.05)',
-                }}
-              />
-              {/* Viñeta en esquinas */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'radial-gradient(ellipse at center, transparent 60%, rgba(10,12,15,0.5) 100%)',
-                pointerEvents: 'none',
-              }} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Texto */}
       <p style={{
         fontFamily: 'Georgia, serif',
         fontSize: '14px',
         color: '#8a7a65',
         lineHeight: '1.9',
         margin: 0,
-        textAlign: 'justify',
       }}>
         {cap.texto}
       </p>
@@ -176,11 +208,11 @@ export default function Historia({ onBack }: Props) {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '24px',
+      overflow: 'hidden',
     }}>
 
-      {/* Header */}
-      <div style={{ width: '100%', maxWidth: '360px', marginBottom: '40px' }}>
+      {/* Header con padding */}
+      <div style={{ width: '100%', maxWidth: '440px', padding: '24px 24px 0' }}>
         <button
           onClick={onBack}
           style={{
@@ -192,104 +224,66 @@ export default function Historia({ onBack }: Props) {
             letterSpacing: '2px',
             cursor: 'pointer',
             padding: 0,
-            marginBottom: '28px',
+            marginBottom: '24px',
             display: 'block',
           }}
         >
           ← VOLVER
         </button>
 
-        {/* Título con separadores */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <p style={{
-            fontFamily: 'Georgia, serif',
-            fontSize: '10px',
-            color: '#4a3a28',
-            letterSpacing: '4px',
-            marginBottom: '8px',
-          }}>
-            LAVIANA
-          </p>
-          <h1 style={{
-            fontFamily: 'Georgia, serif',
-            fontSize: '36px',
-            fontWeight: '700',
-            color: '#c8b89a',
-            margin: '0 0 8px 0',
-            letterSpacing: '2px',
-          }}>
-            Historia
-          </h1>
+        <div style={{ marginBottom: '20px' }}>
           <p style={{
             fontFamily: 'Georgia, serif',
             fontSize: '11px',
-            color: '#4a3a28',
+            color: '#6a5a45',
             letterSpacing: '3px',
-            margin: 0,
+            marginBottom: '6px',
           }}>
             EL ORIGEN DE LA MALDICIÓN
           </p>
-        </div>
-
-        {/* Separador decorativo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', justifyContent: 'center' }}>
-          <div style={{ height: '1px', width: '60px', background: 'linear-gradient(to right, transparent, #3a2e1e)' }} />
-          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#5a4830' }} />
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#8a6840', border: '1px solid #5a4830' }} />
-          <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#5a4830' }} />
-          <div style={{ height: '1px', width: '60px', background: 'linear-gradient(to left, transparent, #3a2e1e)' }} />
-        </div>
-
-        {/* Botón narración */}
-        <button
-          onClick={toggleNarracion}
-          style={{
-            background: narrando ? 'rgba(42,34,24,0.9)' : 'rgba(20,20,20,0.9)',
-            border: `1px solid ${narrando ? '#5a4830' : '#2a2520'}`,
-            borderRadius: '4px',
-            padding: '11px 16px',
-            color: narrando ? '#c8b89a' : '#7a6a55',
+          <h1 style={{
             fontFamily: 'Georgia, serif',
-            fontSize: '12px',
-            letterSpacing: '2px',
-            cursor: 'pointer',
-            width: '100%',
-          }}
-        >
-          {narrando ? '◼ DETENER NARRACIÓN' : '▶ ESCUCHAR HISTORIA'}
-        </button>
+            fontSize: '32px',
+            fontWeight: '700',
+            color: '#c8b89a',
+            margin: '0 0 16px 0',
+          }}>
+            Historia
+          </h1>
+
+          {/* Botón narración */}
+          <button
+            onClick={toggleNarracion}
+            style={{
+              background: narrando ? 'rgba(42,34,24,0.9)' : 'rgba(20,20,20,0.9)',
+              border: `1px solid ${narrando ? '#5a4830' : '#2a2520'}`,
+              borderRadius: '4px',
+              padding: '11px 16px',
+              color: narrando ? '#c8b89a' : '#7a6a55',
+              fontFamily: 'Georgia, serif',
+              fontSize: '12px',
+              letterSpacing: '2px',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            {narrando ? '◼ DETENER NARRACIÓN' : '▶ ESCUCHAR HISTORIA'}
+          </button>
+        </div>
       </div>
 
       {/* Capítulos */}
       <div style={{
         width: '100%',
-        maxWidth: '360px',
+        maxWidth: '440px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0px',
+        gap: '48px',
         paddingBottom: '80px',
+        paddingTop: '8px',
       }}>
         {capitulos.map((cap, i) => (
-          <div key={i}>
-            <CapituloItem cap={cap} index={i} />
-
-            {/* Separador entre capítulos */}
-            {i < capitulos.length - 1 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                margin: '36px 0',
-                justifyContent: 'center',
-              }}>
-                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, transparent, #2a2018)' }} />
-                <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#3a2e1e' }} />
-                <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#3a2e1e' }} />
-                <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#3a2e1e' }} />
-                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to left, transparent, #2a2018)' }} />
-              </div>
-            )}
-          </div>
+          <CapituloItem key={i} cap={cap} index={i} />
         ))}
       </div>
     </div>
