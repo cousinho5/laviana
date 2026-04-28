@@ -151,8 +151,8 @@ export default function Roles({ onBack }: Props) {
             {/* Imagen */}
             <div style={{
               width: '80px',
-              minWidth: '80px',
-              height: '100px',
+             minWidth: '80px',
+              height: '82px',
               borderRadius: '3px',
               overflow: 'hidden',
               display: 'flex',
