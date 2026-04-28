@@ -290,8 +290,6 @@ function BloqueFinal({ onBack }: { onBack: () => void }) {
   )
 }
 
-const textoNarracion = `Laviana era un lugar tranquilo. Hasta que algo despertó en la noche. En lo profundo de las montañas de Asturias, aislado de cualquier otro asentamiento, se encuentra Laviana. Un pueblo olvidado por el tiempo. Aquí, el silencio no es paz. Es advertencia. A las afueras, la Central Lechera Asturiana. Un lugar extraño. Demasiadas vacas. Los aldeanos evitan acercarse. El único humano que habita ese lugar es Zapico. Para muchos, un loco. Para otros, algo peor. Consumido por una obsesión, dedicó su vida a crear la criatura perfecta. No una bestia. No un hombre. Algo superior. Hasta que una noche lo consiguió. Fue él. Así nació el primero de su especie: el Torok Alpha. De día, uno de vosotros. De noche, el Torok. Al amanecer, todo parecía un error. Pero la noche no olvida. Puede corromper a otros. Extender la maldición. Ya no hay distinción entre hombre y bestia. Esta noche, alguien morirá. Laviana ya no es un lugar seguro. ¿Sobrevivirás?`
-
 export default function Historia({ onBack }: Props) {
   const [narrando, setNarrando] = useState(false)
 const audioRef = useRef<HTMLAudioElement | null>(null)
