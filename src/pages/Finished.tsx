@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 
 const roleLabels: Record<string, string> = {
@@ -14,6 +15,13 @@ export default function Finished() {
   const { room, players, setRoom, setPlayers } = useGameStore()
 
   const winner = room?.winner
+  useEffect(() => {
+  if (winner === 'pueblo') {
+    new Audio('/assets/audio/pueblo_gana.mp3').play().catch(() => {})
+  } else if (winner === 'lobos') {
+    new Audio('/assets/audio/toroks_ganan.mp3').play().catch(() => {})
+  }
+}, [])
   const wolves = players.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
   const villagers = players.filter(p => !wolves.includes(p))
   const winners = winner === 'lobos' ? wolves : villagers

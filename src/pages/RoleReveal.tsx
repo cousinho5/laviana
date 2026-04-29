@@ -80,7 +80,7 @@ export default function RoleReveal() {
             border: `1px solid ${info?.color ?? '#2a2520'}`,
             borderRadius: '4px',
             overflow: 'hidden',
-            minHeight: '320px',
+            minHeight: '380px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
@@ -91,16 +91,12 @@ export default function RoleReveal() {
                 src={info.imagen}
                 alt={info.label}
                 style={{
-  position: 'absolute',
-  bottom: 0,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  height: 'auto',
-  width: '75%',
-  objectFit: 'contain',
-  objectPosition: 'bottom center',
-  opacity: 0.35,
-}}
+               height: 'auto',
+                width: '100%',
+                objectFit: 'contain',
+                objectPosition: 'bottom center',
+                opacity: 0.4,
+                }}
               />
             )}
 

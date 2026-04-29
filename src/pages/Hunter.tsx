@@ -9,6 +9,11 @@ export default function Hunter() {
   const alivePlayers = players.filter(p => p.is_alive && p.id !== room?.hunter_id)
   const hunterPlayer = players.find(p => p.id === room?.hunter_id)
 
+  // Narración al entrar en la fase del cazador
+  useEffect(() => {
+    new Audio('/assets/audio/cazador_dispara.mp3').play().catch(() => {})
+  }, [])
+
   useEffect(() => {
     if (!room) return
     supabase.from('players').select().eq('room_id', room.id).then(({ data }) => { if (data) setPlayers(data) })
@@ -40,12 +45,12 @@ export default function Hunter() {
       }
     }
     const comingFromNight = room.day_phase === 'dawn'
-await supabase.from('rooms').update({
-  hunter_target_id: targetId,
-  phase: 'day',
-  day_phase: comingFromNight ? 'dawn' : 'execution',
-  last_victim_id: comingFromNight ? room.hunter_id : room.last_victim_id,
-}).eq('id', room.id)
+    await supabase.from('rooms').update({
+      hunter_target_id: targetId,
+      phase: 'day',
+      day_phase: comingFromNight ? 'dawn' : 'execution',
+      last_victim_id: comingFromNight ? room.hunter_id : room.last_victim_id,
+    }).eq('id', room.id)
   }
 
   async function skipShot() {
