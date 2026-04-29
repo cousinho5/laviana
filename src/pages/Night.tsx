@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
+
+function playAudio(src: string) {
+  const audio = new Audio(src)
+  audio.play().catch(() => {})
+}
 
 export default function Night() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
@@ -12,6 +17,7 @@ export default function Night() {
   const [alphaUsedInfection, setAlphaUsedInfection] = useState(false)
   const [sleepStep, setSleepStep] = useState<0 | 1 | 2 | 3>(0)
   const [infectedKillDone, setInfectedKillDone] = useState(false)
+  const audioPlayedRef = useRef<string | null>(null)
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const myRole = myPlayer?.role
@@ -25,6 +31,15 @@ export default function Night() {
   const isProtector = myRole === 'protector'
   const isInfectedWithRole = isInfected && (isSeer || isProtector)
   const isSleeper = !isWolf && !isSeer && !isProtector
+
+  // Narración al empezar la noche
+  useEffect(() => {
+    if (!room) return
+    const key = `night-${room.id}-${room.night}`
+    if (audioPlayedRef.current === key) return
+    audioPlayedRef.current = key
+    playAudio('/assets/audio/noche.mp3')
+  }, [room?.night])
 
   useEffect(() => {
     if (!room) return
@@ -118,19 +133,14 @@ export default function Night() {
       return
     }
     if (mayorDied) {
-  await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
-  await supabase.from('rooms').update({
-    phase: 'day',
-    day_phase: 'dawn',
-    night: room.night + 1,
-    last_victim_id: victimId,
-    last_victim_saved: false,
-    last_victim_infected: false,
-    hunter_target_id: null,
-    mayor_vote_reason: 'dawn',
-  }).eq('id', room.id)
-  return
-}
+      await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
+      await supabase.from('rooms').update({
+        phase: 'day', day_phase: 'dawn', night: room.night + 1,
+        last_victim_id: victimId, last_victim_saved: false, last_victim_infected: false,
+        hunter_target_id: null, mayor_vote_reason: 'dawn',
+      }).eq('id', room.id)
+      return
+    }
     const winner = checkVictory(updatedPlayers.data)
     if (winner) { await supabase.from('rooms').update({ phase: 'finished', winner }).eq('id', room.id); return }
     await supabase.from('rooms').update({ phase: 'day', day_phase: 'dawn', night: room.night + 1, last_victim_id: victimId && !isProtected && !isInfectedVictim ? victimId : null, last_victim_saved: isProtected ? true : false, last_victim_infected: isInfectedVictim ? true : false, hunter_target_id: null }).eq('id', room.id)
@@ -149,36 +159,32 @@ export default function Night() {
   }
 
   async function confirmKill(passing: boolean = false) {
-  if (!currentPlayer || !room) return
-  const actionType = infectMode ? 'infect' : 'kill'
-  if (pendingActionId) {
-    await supabase.from('night_actions').update({ 
-      confirmed: true, 
-      action_type: actionType,
-      target_id: passing ? null : targetId 
-    }).eq('id', pendingActionId)
-  } else {
-    await supabase.from('night_actions').insert({ 
-      room_id: room.id, 
-      player_id: currentPlayer.id, 
-      action_type: actionType, 
-      target_id: null, 
-      night: room.night, 
-      confirmed: true 
-    })
+    if (!currentPlayer || !room) return
+    const actionType = infectMode ? 'infect' : 'kill'
+    if (pendingActionId) {
+      await supabase.from('night_actions').update({
+        confirmed: true, action_type: actionType,
+        target_id: passing ? null : targetId
+      }).eq('id', pendingActionId)
+    } else {
+      await supabase.from('night_actions').insert({
+        room_id: room.id, player_id: currentPlayer.id,
+        action_type: actionType, target_id: null,
+        night: room.night, confirmed: true
+      })
+    }
+    if (infectMode) {
+      await supabase.from('players').update({ used_infection: true }).eq('id', currentPlayer.id)
+      setAlphaUsedInfection(true)
+    }
+    if (isInfectedWithRole) {
+      setInfectedKillDone(true)
+      setTargetId(null)
+      setPendingActionId(null)
+    } else {
+      setHasActed(true)
+    }
   }
-  if (infectMode) { 
-    await supabase.from('players').update({ used_infection: true }).eq('id', currentPlayer.id)
-    setAlphaUsedInfection(true) 
-  }
-  if (isInfectedWithRole) { 
-    setInfectedKillDone(true)
-    setTargetId(null)
-    setPendingActionId(null) 
-  } else { 
-    setHasActed(true) 
-  }
-}
 
   async function confirmRoleAction(passing: boolean = false, roleTargetId?: string) {
     if (!currentPlayer || !room) return

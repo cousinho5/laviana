@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useGameStore } from '../store/gameStore'
+
+function playAudio(src: string) {
+  const audio = new Audio(src)
+  audio.play().catch(() => {})
+}
 
 export default function Day() {
   const { room, players, currentPlayer, setPlayers, setRoom } = useGameStore()
@@ -9,6 +14,7 @@ export default function Day() {
   const [seerResult, setSeerResult] = useState<{ name: string; role: string; infected: boolean } | null>(null)
   const [dayVotes, setDayVotes] = useState<any[]>([])
   const [pendingVoteId, setPendingVoteId] = useState<string | null>(null)
+  const audioPlayedRef = useRef<string | null>(null)
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const isAlive = myPlayer?.is_alive
@@ -28,6 +34,36 @@ export default function Day() {
     cazador: 'Cazaor',
     laviano: 'Lavianes',
   }
+
+  // Narración automática al cambiar de fase
+  useEffect(() => {
+    if (!room) return
+    const key = `${room.id}-${dayPhase}-${currentDay}`
+    if (audioPlayedRef.current === key) return
+    audioPlayedRef.current = key
+
+    if (dayPhase === 'dawn') {
+      if (room.last_victim_saved) {
+        playAudio('/assets/audio/amanecer_salvado.mp3')
+      } else if (room.last_victim_id) {
+        playAudio('/assets/audio/amanecer_muerte.mp3')
+      } else {
+        playAudio('/assets/audio/amanecer_calma.mp3')
+      }
+    }
+
+    if (dayPhase === 'vote') {
+      playAudio('/assets/audio/votacion.mp3')
+    }
+
+    if (dayPhase === 'execution') {
+      if (room.last_executed_id) {
+        playAudio('/assets/audio/ejecucion.mp3')
+      } else {
+        playAudio('/assets/audio/ejecucion_nadie.mp3')
+      }
+    }
+  }, [dayPhase, currentDay])
 
   useEffect(() => {
     if (!room) return
