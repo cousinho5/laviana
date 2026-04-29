@@ -14,3 +14,9 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
   })
 }
+
+// Evitar que el botón atrás cierre la app
+window.addEventListener('popstate', (event) => {
+  history.pushState(null, '', window.location.href)
+})
+history.pushState(null, '', window.location.href)
