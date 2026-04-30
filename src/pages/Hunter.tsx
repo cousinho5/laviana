@@ -40,6 +40,7 @@ export default function Hunter() {
       if (wolves.length === 0) winner = 'pueblo'
       else if (wolves.length >= villagers.length) winner = 'lobos'
       if (winner) {
+        new Audio('/assets/audio/cazador_mata.mp3').play().catch(() => {})
         await supabase.from('rooms').update({ phase: 'finished', winner, hunter_target_id: targetId }).eq('id', room.id)
         return
       }

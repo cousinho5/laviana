@@ -30,10 +30,11 @@ function App() {
 
   if (room.phase === 'finished') return <Finished />
   if (room.phase === 'intro') return <Intro />
-  if (room.phase === 'hunter') return <Hunter />
 
   const myPlayer = players.find(p => p.id === currentPlayer?.id)
   const isDead = myPlayer && !myPlayer.is_alive
+
+  if (room.phase === 'hunter') return isDead ? <Dead /> : <Hunter />
 
   if (room.phase === 'mayor_replace') {
     return isDead ? <Dead /> : <MayorReplace />

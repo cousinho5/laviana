@@ -317,6 +317,23 @@ export default function Day() {
             <button style={btnHost} onClick={async () => {
               const mayorWasExecuted = room.last_executed_id === room.mayor_id
               const mayorWasHunterTarget = room.hunter_target_id === room.mayor_id
+
+              // Comprobar victoria antes de ir a mayor_replace
+              const { data: freshPlayers } = await supabase.from('players').select().eq('room_id', room.id)
+              if (freshPlayers) {
+                const alive = freshPlayers.filter(p => p.is_alive)
+                const wolves = alive.filter(p => p.role === 'lobo' || p.role === 'alpha' || p.infected)
+                const villagers = alive.filter(p => !wolves.includes(p))
+                if (wolves.length === 0) {
+                  await supabase.from('rooms').update({ phase: 'finished', winner: 'pueblo' }).eq('id', room.id)
+                  return
+                }
+                if (wolves.length >= villagers.length) {
+                  await supabase.from('rooms').update({ phase: 'finished', winner: 'lobos' }).eq('id', room.id)
+                  return
+                }
+              }
+
               if (mayorWasExecuted || mayorWasHunterTarget) {
                 await supabase.from('players').update({ voted_for: null }).eq('room_id', room.id)
                 await supabase.from('rooms').update({ phase: 'mayor_replace', mayor_vote_reason: 'day' }).eq('id', room.id)
